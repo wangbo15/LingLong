@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="test"/>
+	<classpathentry kind="lib" path="lib/javacsv.jar"/>
+	<classpathentry kind="lib" path="lib/org.eclipse.core.contenttype_3.4.200.v20140207-1251.jar"/>
+	<classpathentry kind="lib" path="lib/org.eclipse.core.jobs_3.6.1.v20141014-1248.jar"/>
+	<classpathentry kind="lib" path="lib/org.eclipse.core.resources_3.9.1.v20140825-1431.jar"/>
+	<classpathentry kind="lib" path="lib/org.eclipse.core.runtime_3.10.0.v20140318-2214.jar"/>
+	<classpathentry kind="lib" path="lib/org.eclipse.equinox.common_3.6.200.v20130402-1505.jar"/>
+	<classpathentry kind="lib" path="lib/org.eclipse.equinox.preferences_3.5.200.v20140224-1527.jar"/>
+	<classpathentry kind="lib" path="lib/org.eclipse.jdt.core_3.10.0.v20140902-0626.jar" sourcepath="lib/org.eclipse.jdt.core.source_3.10.0.v20140902-0626.jar"/>
+	<classpathentry kind="lib" path="lib/org.eclipse.jdt.core.source_3.10.0.v20140902-0626.jar"/>
+	<classpathentry kind="lib" path="lib/org.eclipse.osgi_3.10.2.v20150203-1939.jar"/>
+	<classpathentry kind="lib" path="lib/org.eclipse.jdt.ui_3.12.1.v20160822-0645.jar" sourcepath="/home/nightwish/code/git/eclipse/eclipse.jdt.ui/org.eclipse.jdt.ui/ui"/>
+	<classpathentry kind="lib" path="lib/org.eclipse.ui.workbench_3.108.0.v20160602-1232.jar"/>
+	<classpathentry kind="lib" path="lib/org.eclipse.swt.gtk.linux.x86_64_3.105.0.v20160603-0902.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
+	<classpathentry kind="lib" path="lib/dom4j-1.6.1.jar"/>
+	<classpathentry kind="lib" path="lib/log4j-1.2.17.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="lib" path="lib/jdom-2.0.6.jar"/>
+	<classpathentry kind="lib" path="lib/ProInfo.jar" sourcepath="/ProInfo"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

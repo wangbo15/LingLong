@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<subjects>	
+
+<!-- CHART -->	
+	<subject name="chart" id="4">
+		<path>/source</path>
+		<test_path>/tests</test_path>
+	</subject>
+
+	<subject name="chart" id="16">
+		<path>/source</path>
+		<test_path>/tests</test_path>
+	</subject>
+
+	<subject name="chart" id="26">
+		<path>/source</path>
+		<test_path>/tests</test_path>		
+	</subject> 
+
+<!-- MATH -->
+	
+	<subject name="math" id="12">
+		<path>/src/main/java</path>
+		<test_path>/src/test/java</test_path>
+	</subject>
+	
+<!--  	<subject name="math" id="17">
+		<path>/src/main/java</path>
+		<test_path>/src/test/java</test_path>
+	</subject>	-->
+	
+	<subject name="math" id="37">
+		<path>/src/main/java</path>
+		<test_path>/src/test/java</test_path>
+	</subject>
+ 
+	<subject name="math" id="48">
+		<path>/src/main/java</path>
+		<test_path>/src/test/java</test_path>
+	</subject>
+
+	<subject name="math" id="59">
+		<path>/src/main/java</path>
+		<test_path>/src/test/java</test_path>
+	</subject>
+
+	<subject name="math" id="67">
+		<path>/src/main/java</path>
+		<test_path>/src/test/java</test_path>
+	</subject>
+
+	<subject name="math" id="75">
+		<path>/src/main/java</path>
+		<test_path>/src/test/java</test_path>
+	</subject>
+
+	<subject name="math" id="84">
+		<path>/src/main/java</path>
+		<test_path>/src/test/java</test_path>
+	</subject>
+
+	<subject name="math" id="94">
+		<path>/src/java</path>
+		<test_path>/src/test</test_path>
+	</subject>
+
+	<subject name="math" id="102">
+		<path>/src/java</path>
+		<test_path>/src/test</test_path>
+	</subject>
+	
+	<subject name="math" id="104">
+		<path>/src/java</path>
+		<test_path>/src/test</test_path>
+	</subject>
+	
+	<subject name="math" id="106">
+		<path>/src/java</path>
+		<test_path>/src/test</test_path>
+	</subject>
+
+<!-- TIME -->
+	<subject name="time" id="11">
+		<path>/src/main/java</path>
+		<test_path>/src/test/java</test_path>
+	</subject>	
+	
+	<subject name="time" id="17">
+		<path>/src/main/java</path>
+		<test_path>/src/test/java</test_path>
+	</subject>
+	
+	<subject name="time" id="24">
+		<path>/src/main/java</path>
+		<test_path>/src/test/java</test_path>
+	</subject>
+	
+	<subject name="time" id="27">
+		<path>/src/main/java</path>
+		<test_path>/src/test/java</test_path>
+	</subject>	
+	
+<!-- LANG -->
+	<subject name="lang" id="5">
+		<path>/src/main/java</path>
+		<test_path>/src/test/java</test_path>
+	</subject>
+	
+	<subject name="lang" id="14">
+		<path>/src/main/java</path>
+		<test_path>/src/test/java</test_path>
+	</subject>
+
+	<subject name="lang" id="24">
+		<path>/src/main/java</path>
+		<test_path>/src/test/java</test_path>
+	</subject>
+
+	<subject name="lang" id="35">
+		<path>/src/main/java</path>
+		<test_path>/src/test/java</test_path>
+	</subject>
+
+	<subject name="lang" id="43">
+		<path>/src/java</path>
+		<test_path>/src/test</test_path>
+	</subject>
+	
+	<subject name="lang" id="48">
+		<path>/src/java</path>
+		<test_path>/src/test</test_path>
+	</subject>
+
+	<subject name="lang" id="55">
+		<path>/src/java</path>
+		<test_path>/src/test</test_path>
+	</subject>
+
+	<subject name="lang" id="65">
+		<path>/src/java</path>
+		<test_path>/src/test</test_path>
+	</subject>
+
+</subjects>

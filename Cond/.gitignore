@@ -1,0 +1,13 @@
+## ignore the build dir ##
+*.class
+bin/**
+Condition.jar
+*/.idea/
+.idea/
+*.pyc
+*.pkl
+python/input/
+python/model/
+python/output/
+python/backup/
+/bin/
