@@ -16,9 +16,17 @@ The original paper of L2S framework can be found in our workshop paper:
 
 
 ### Training Stage
-Given a Java project, LingLong collects all the conditional expressions and parses them.
+
+1. *Training data extraction*. Given a Java project, LingLong collects all the conditional expressions and parses them into options by a specified order, after which LingLong generates training dataset.
+
+2. *Traning Models*. LingLong trains machine learning models against the training data.
 
 ### Synthesizing Stage
+
+1. *Code Location Selection*. Select a certain code location, from which LingLong extracts *Context Features* and fires the generation step.
+
+2. *Expression Generation*. Under the given *context*, LingLong synthesizes *K* conditional expressions ranked by their estimated probabilities.
+
 
 ## II. Environment
 
