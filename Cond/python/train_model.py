@@ -38,21 +38,30 @@ if __name__ == '__main__':
 
     # train position 0 var
     var_trainer = VarWithPCA(config)
+    expr_trainer = ExprWithPCA(config)
+    recurnode_trainer = RecurNode(config)
 
     if direction == BU_DIRE:
-        # only 'bottom_up' need train v0
-        var_trainer.train(is_v0=True)
+        var_trainer.train(upward=True)
+        var_trainer.train(upward=False)
+        expr_trainer.train(upward=True)
 
-    # train all position var
-    var_trainer.train(is_v0=False)
+    elif direction == TD_DIRE:
+        var_trainer.train(upward=False)
+        expr_trainer.train(upward=False)
 
-    # train expr
-    expr_trainer = ExprWithPCA(config)
-    expr_trainer.train()
+    elif direction == RC_DIRE:
+        recurnode_trainer.train(upward=False)
+        var_trainer.train(upward=False)
+        expr_trainer.train(upward=False)
 
-    if direction == RC_DIRE:
-        recurnode_trainer = RecurNode(config)
-        recurnode_trainer.train()
+    elif direction == RCBU_DIRE:
+        var_trainer.train(upward=True)
+        var_trainer.train(upward=False)
+        expr_trainer.train(upward=True)
+        expr_trainer.train(upward=False)
+        recurnode_trainer.train(upward=True)
+        recurnode_trainer.train(upward=False)
 
     time_end = time.time()
     logging.info('########## TOTAL TRAINING TIME ' + str(float(time_end - all_time_start)/60) + ' M ' + direction.upper() + ' ##########\n')

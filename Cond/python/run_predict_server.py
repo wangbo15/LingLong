@@ -25,11 +25,21 @@ BU_V0_REQUEST_HEAD = '#@!>>BU_V0\n'
 BU_EXPR_REQUEST_HEAD = '#@!>>BU_EXPR\n'
 BU_VAR_REQUEST_HEAD = '#@!>>BU_VAR\n'
 
+RCBU_V0_REQUEST_HEAD = '#@!>>RCBU_V0\n'
+RCBU_V1_REQUEST_HEAD = '#@!>>RCBU_V1\n'
+RCBU_E0_REQUEST_HEAD = '#@!>>RCBU_E0\n'
+RCBU_E1_REQUEST_HEAD = '#@!>>RCBU_E1\n'
+RCBU_R0_REQUEST_HEAD = '#@!>>RCBU_R0\n'
+RCBU_R1_REQUEST_HEAD = '#@!>>RCBU_R1\n'
+
+
 CLOSE_REQUEST_HEAD = '#@!CLOSE\n'
 
 ERR_RESPOND = bytes('#@!ERROR\n')
 
 DEFAULT_PORT = 6666
+
+PORTS = {'math': DEFAULT_PORT, 'lang': DEFAULT_PORT + 1, 'chart': DEFAULT_PORT + 2, 'time': DEFAULT_PORT + 3}
 
 def recv_end(the_socket):
     total_data = [];
@@ -55,7 +65,7 @@ def recv_end(the_socket):
     return ''.join(total_data)
 
 
-def process(client_data, td_predictor, bu_predictor, recur_predictor):
+def process(client_data, td_predictor, bu_predictor, recur_predictor, rcbu_predictor):
     try:
         res_list = []
 
@@ -84,7 +94,7 @@ def process(client_data, td_predictor, bu_predictor, recur_predictor):
         if recur_predictor is not None:
             if client_data.startswith(RECUR_NODE_REQUEST_HEAD): # for top down recur node
                 data = client_data[len(RECUR_NODE_REQUEST_HEAD):]
-                res_list = recur_predictor.predict_recurnode(data)
+                res_list = recur_predictor.predict_recurnode(data, RECURNODE_MISSION)
 
             elif client_data.startswith(RECUR_EXPR_REQUEST_HEAD):  # for top down recur node
                 data = client_data[len(RECUR_EXPR_REQUEST_HEAD):]
@@ -93,6 +103,31 @@ def process(client_data, td_predictor, bu_predictor, recur_predictor):
             elif client_data.startswith(RECUR_VAR_REQUEST_HEAD):  # for top down recur node
                 data = client_data[len(RECUR_VAR_REQUEST_HEAD):]
                 res_list = recur_predictor.predict_recurvar(data)
+
+        if rcbu_predictor is not None:
+            if client_data.startswith(RCBU_V0_REQUEST_HEAD):
+                data = client_data[len(RCBU_V0_REQUEST_HEAD):]
+                res_list = rcbu_predictor.predict_var(data, True)
+
+            if client_data.startswith(RCBU_V1_REQUEST_HEAD):
+                data = client_data[len(RCBU_V1_REQUEST_HEAD):]
+                res_list = rcbu_predictor.predict_var(data, False)
+
+            elif client_data.startswith(RCBU_E0_REQUEST_HEAD):
+                data = client_data[len(RCBU_E0_REQUEST_HEAD):]
+                res_list = rcbu_predictor.predict_expr(data, mission_type=RCBU_E0_MISSION)
+
+            elif client_data.startswith(RCBU_E1_REQUEST_HEAD):
+                data = client_data[len(RCBU_E1_REQUEST_HEAD):]
+                res_list = rcbu_predictor.predict_expr(data, mission_type=RCBU_E1_MISSION)
+
+            elif client_data.startswith(RCBU_R0_REQUEST_HEAD):
+                data = client_data[len(RCBU_R0_REQUEST_HEAD):]
+                res_list = rcbu_predictor.predict_recurnode(data, mission_type=RCBU_R0_MISSION)
+
+            elif client_data.startswith(RCBU_R1_REQUEST_HEAD):
+                data = client_data[len(RCBU_R1_REQUEST_HEAD):]
+                res_list = rcbu_predictor.predict_recurnode(data, mission_type=RCBU_R1_MISSION)
 
         return '\n'.join(res_list)
 
@@ -104,16 +139,16 @@ def process(client_data, td_predictor, bu_predictor, recur_predictor):
 def get_predictor(args):
     proj = args.subject
     bug = args.id
-
     td_predictor = None
     bu_predictor = None
     recur_predictor = None
+    rcbu_predictor = None
 
     if args.use_td:
         td_config = Configure(
             proj,
             bug,
-            'top_down',
+            TD_DIRE,
             1,
             'model/',
             'input/',
@@ -126,7 +161,7 @@ def get_predictor(args):
         bu_config = Configure(
             proj,
             bug,
-            'bottom_up',
+            BU_DIRE,
             1,
             'model/',
             'input/',
@@ -139,7 +174,7 @@ def get_predictor(args):
         recur_config = Configure(
             proj,
             bug,
-            'recur',
+            RC_DIRE,
             1,
             'model/',
             'input/',
@@ -148,7 +183,20 @@ def get_predictor(args):
         )
         recur_predictor = DensePredictor(recur_config)
 
-    return td_predictor, bu_predictor, recur_predictor
+    if args.use_rcbu:
+        rcbu_config = Configure(
+            proj,
+            bug,
+            RCBU_DIRE,
+            1,
+            'model/',
+            'input/',
+            'output/',
+            sys.maxint  # TOP: 10, 100, sys.maxint
+        )
+        rcbu_predictor = DensePredictor(rcbu_config)
+
+    return td_predictor, bu_predictor, recur_predictor, rcbu_predictor
 
 
 if __name__ == '__main__':
@@ -166,23 +214,30 @@ if __name__ == '__main__':
     parser.add_argument('-nr', '--no-recur', action='store_false', dest='use_rc',
                         help='RECUR OFF', required=False)
 
+    parser.add_argument('-nrb', '--no-recurbu', action='store_false', dest='use_rcbu',
+                        help='RECUR_BU OFF', required=False)
+
     parser.add_argument('-p', '--port', dest='port', type=int, default=DEFAULT_PORT,
                         help='the port to sever', required=False)
 
     args = parser.parse_args()
 
+    port = args.port
+    if args.subject in PORTS:
+        port = PORTS[args.subject]
+
     # use localhost rather than 127.0.0.1 !
-    ip_port = ('localhost', args.port)
+    ip_port = ('localhost', port)
     sever = socket.socket()
     sever.bind(ip_port)
     sever.listen(8)
 
-    print 'Connecting with port %d' % (args.port)
+    print 'Connecting with port %d' % port
 
-    print 'Loading %s models for %s_%s. TD: %s, BU: %s, RC: %s' % \
-          (LEARNING_ALG.upper(), args.subject, args.id, args.use_td, args.use_bu, args.use_rc)
+    print 'Loading %s models for %s_%s. TD: %s, BU: %s, RC: %s, RCBU: %s ' % \
+          (LEARNING_ALG.upper(), args.subject, args.id, args.use_td, args.use_bu, args.use_rc, args.use_rcbu)
 
-    td_predictor, bu_predictor, recur_predictor = get_predictor(args)
+    td_predictor, bu_predictor, recur_predictor, rcbu_predictor = get_predictor(args)
 
     while True:
         conn, addr = sever.accept()
@@ -202,7 +257,7 @@ if __name__ == '__main__':
                 print '>>>> CLOSED >>>> ', (end - start), ' sec'
                 break
             try:
-                response = process(client_data, td_predictor, bu_predictor, recur_predictor)
+                response = process(client_data, td_predictor, bu_predictor, recur_predictor, rcbu_predictor)
                 # print response
                 conn.sendall(response)
             except:

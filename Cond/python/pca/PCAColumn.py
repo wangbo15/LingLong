@@ -16,7 +16,10 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 # from mpl_toolkits.mplot3d import Axes3D
 
 from sklearn.preprocessing import LabelEncoder
+from Utils.config import *
 
+EXPR_MISSIONS = [EXPR_MISSION, RCBU_E0_MISSION, RCBU_E1_MISSION]
+VAR_MISSIONS = [VAR_MISSION, V0_MISSION, RCBU_V0_MISSION, RCBU_V1_MISSION]
 
 class PCAColumn(object):
 
@@ -289,9 +292,9 @@ class PCAColumn(object):
             # get bags
             all_bag_encoders = pca_col.all_vector(ori_file_data, tags)
 
-            if mission_type == 'expr':
+            if mission_type in EXPR_MISSIONS:
                 y = ori_file_data['pred']
-            elif mission_type == 'var' or mission_type == 'v0':
+            elif mission_type in VAR_MISSIONS:
                 y = ori_file_data['putin']
 
         else:

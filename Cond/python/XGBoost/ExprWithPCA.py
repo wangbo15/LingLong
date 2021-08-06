@@ -2,6 +2,8 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
+from sklearn import tree
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import f_classif
 from sklearn.feature_selection import SelectPercentile
 import xgboost as xgb
@@ -74,15 +76,6 @@ class ExprWithPCA(PCAForXgb):
             all_columns = np.asarray(X.columns.values)
             logging.info('>> ALL COLUMNS IN {} EXPR TRAINING DATA'.format(self.__configure__.__direction__.upper()))
             logging.info(all_columns)
-            if ACTIVATE_FS:
-                selector = SelectPercentile(f_classif, percentile=FS_PCT).fit(X, Y)
-                with open(self.__configure__.get_feature_selection_model(EXPR_MISSION), 'wb') as f:
-                    pickle.dump(selector, f, protocol=2)
-                ori_shape = X.shape
-                selected_columns = all_columns[np.asarray(selector.get_support())]
-                X = selector.transform(X)
-                logging.info('>> FEATURE SELECTION: {} TO {}'.format(ori_shape, X.shape))
-                logging.info(selected_columns)
 
         # for predicting
         else:
@@ -93,6 +86,18 @@ class ExprWithPCA(PCAForXgb):
                 # TODO: need to dump changed encoder for backup?
 
         return X, Y
+
+    def select_feature(self, X, Y, mission):
+        selector = SelectPercentile(f_classif, percentile=FS_PCT).fit(X, Y)
+        with open(self.__configure__.get_feature_selection_model(mission), 'wb') as f:
+            pickle.dump(selector, f, protocol=2)
+        ori_shape = X.shape
+        all_columns = np.asarray(X.columns.values)
+        selected_columns = all_columns[np.asarray(selector.get_support())]
+        X = selector.transform(X)
+        logging.info('>> FEATURE SELECTION: {} TO {}'.format(ori_shape, X.shape))
+        logging.info(selected_columns)
+        return X
 
     def get_predicated_label(self, y_pred):
         result = []
@@ -168,14 +173,13 @@ class ExprWithPCA(PCAForXgb):
         M_valid = xgb.DMatrix(X_valid, label=y_valid)
 
         # cv_model = self.xgb_cla ssifier_cv(X_train, y_train, X_valid, y_valid)
-        model = self.xbg_inner(M_train, M_valid, class_num)
+        model = self.xgboost_inner(M_train, M_valid, class_num)
 
         logging.info("EXPR best score: {}".format(model.best_score))
 
         y_pred = model.predict(M_valid)
         y_pred_label = self.get_predicated_label(y_pred)
-        self.get_metrics(y_valid, y_pred_label)
-
+        # self.get_metrics(y_valid, y_pred_label)
         return model
 
     def train_naive_bayes(self, X, Y):
@@ -188,15 +192,25 @@ class ExprWithPCA(PCAForXgb):
         model.fit(X, Y)
         return model
 
-    def train(self):
+    def train_dt(self, X, Y):
+        model = tree.DecisionTreeClassifier(criterion="entropy")
+        model.fit(X, Y)
+        return model
+
+    def train_rf(self, X, Y):
+        model = RandomForestClassifier(criterion='entropy', n_estimators=10, random_state=1, n_jobs=-1)
+        model.fit(X, Y)
+        return model
+
+    def train(self, upward):
         '''
         entrance of expr training
         :return: 
         '''
-        logging.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> START EXPR {} >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(LEARNING_ALG.upper()))
+        logging.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> START EXPR %s, UPWARD: %s >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>' % (LEARNING_ALG.upper(), upward))
         pca_start_time = time.time()
 
-        expr_file = self.__configure__.get_raw_expr_train_in_file()
+        expr_file = self.__configure__.get_raw_expr_train_in_file(upward)
         ori_file_data = pd.read_csv(expr_file, sep='\t', header=0, encoding='utf-8')
 
         # ori_file_data = self.filter_by_frequency(ori_file_data)
@@ -212,14 +226,22 @@ class ExprWithPCA(PCAForXgb):
             if tag in ori_file_data.columns:
                 ori_file_data.drop(tag, axis=1, inplace=True)
 
+        if self.__configure__.__direction__ == RCBU_DIRE:
+            if upward:
+                mission = RCBU_E0_MISSION
+            else:
+                mission = RCBU_E1_MISSION
+        else:
+            mission = EXPR_MISSION
+
         all_pca_added_df = PCAColumn.get_pca_dataframe(ori_file_data,
                                                    self.__configure__,
-                                                   EXPR_MISSION,
+                                                   mission,
                                                    transformed_tags,
                                                    all_model_set,
                                                    is_training=True)
 
-        pca_model_path = self.__configure__.get_pca_model(EXPR_MISSION)
+        pca_model_path = self.__configure__.get_pca_model(mission)
         pickle.dump(all_model_set, open(pca_model_path, "wb"), protocol=2)
 
         pca_end_time = time.time()
@@ -233,7 +255,10 @@ class ExprWithPCA(PCAForXgb):
 
         X, Y = self.preprocess(ori_file_data, all_pca_added_df, all_encoders=all_encoders, is_training=True)
 
-        with open(self.__configure__.get_all_label_encoders(EXPR_MISSION), 'wb') as f:
+        if ACTIVATE_FS:
+            X = self.select_feature(X, Y, mission)
+
+        with open(self.__configure__.get_all_label_encoders(mission), 'wb') as f:
             pickle.dump(all_encoders, f, protocol=2)
 
         encoder_end_time = time.time()
@@ -250,8 +275,10 @@ class ExprWithPCA(PCAForXgb):
             model = self.train_naive_bayes(X, Y)
         elif LEARNING_ALG == 'svm':
             model = self.train_svm(X, Y)
+        elif LEARNING_ALG == 'dt':
+            model = self.train_dt(X, Y)
 
-        model_file = self.__configure__.get_expr_model_file()
+        model_file = self.__configure__.get_model_file(self.__configure__.__direction__, mission)
         with open(model_file, 'wb') as f:
             pickle.dump(model, f, protocol=2)
             print('EXPR MODEL SAVED AS {}'.format(model_file))
@@ -259,7 +286,7 @@ class ExprWithPCA(PCAForXgb):
         train_end_time = time.time()
         logging.info("EXPR {} MODEL Training Time: {} s".format(LEARNING_ALG, train_end_time - pca_end_time))
 
-    def xbg_inner(self, M_train, M_valid, class_num, early_stop=50):
+    def xgboost_inner(self, M_train, M_valid, class_num, early_stop=50):
 
         params = {
             'booster': 'gbtree',
@@ -282,7 +309,6 @@ class ExprWithPCA(PCAForXgb):
         model = xgb.train(params, M_train, num_boost_round=num_round, evals=watchlist,
                       early_stopping_rounds=early_stop, learning_rates=learning_rates)
         return model
-
 
     def xgb_classifier_cv(self, X_train, y_train, X_valid, y_valid, early_stop=30):
         params = {
@@ -328,76 +354,4 @@ class ExprWithPCA(PCAForXgb):
             y_pred_ori.append(inverse_label_encoder[y])
 
         classify_report = metrics.classification_report(y_true_ori, y_pred_ori)
-        # logging.info(classify_report)
-
-
-    def predict(self):
-        data_file_path = self.__configure__.get_raw_expr_pred_in_file()
-        data = pd.read_csv(data_file_path, sep='\t', header=0, encoding='utf-8')
-
-        pca_model_path = self.__configure__.get_pca_model(EXPR_MISSION)
-        with open(pca_model_path, 'r') as f:
-            all_model_set = pickle.load(f)
-
-        del_list_file = self.__configure__.get_deleted_zero_columm(EXPR_MISSION)
-        with open(del_list_file, 'r') as f:
-            all_deleted_list_dict = pickle.load(f)
-
-        pca_df = PCAColumn.get_pca_dataframe(data,
-                                             self.__configure__,
-                                             EXPR_MISSION,
-                                             Configure.get_expr_tags_for_pca(),
-                                             all_model_set,
-                                             is_training=False,
-                                             all_deleted_list_dict=all_deleted_list_dict)
-
-        with open(self.__configure__.get_all_label_encoders(EXPR_MISSION), 'r') as f:
-            all_encoders = pickle.load(f)
-
-        # print pca_df.shape
-        start = time.time()
-
-        X, nop_Y = self.preprocess(data, pca_df, all_encoders=all_encoders, is_training=False)
-        end = time.time()
-        print 'PREPRO TIME: ', (end - start)
-
-        start = time.time()
-
-        model_file = self.__configure__.get_expr_model_file()
-        xgb_expr_model = pickle.load(open(model_file, 'r'))
-
-        end = time.time()
-        print 'LOAD TIME: ', (end - start)
-
-        start = time.time()
-
-        M_pred = xgb.DMatrix(X)
-        y_prob = xgb_expr_model.predict(M_pred)
-        end = time.time()
-        print 'PRED TIME: ', (end - start)
-
-        line = y_prob[0] # only has one line
-
-        top =  self.__configure__.get_gen_expr_top()
-        if line.shape[0] < top:
-            top = line.shape[0]
-
-        #TODO learn heapq
-        alts = heapq.nlargest(top, range(len(line)), line.__getitem__)
-
-        expr_predicted = self.__configure__.get_expr_pred_out_file()
-        if os.path.exists(expr_predicted):
-            os.remove(expr_predicted)
-        with open(expr_predicted, 'w') as output:
-            with open(self.__configure__.get_all_label_encoders(EXPR_MISSION), 'r') as model:
-                all_encoders = pickle.load(model)
-                Y_encoder = all_encoders['pred']
-                inverse_label_encoder = dict(zip(Y_encoder.values(), Y_encoder.keys()))
-                for j in range(top):
-                    label = alts[j]
-                    original = inverse_label_encoder[label]
-
-                    output.write('{}'.format(original))  # predicate
-                    output.write('\t%.17f' % line[alts[j]])
-                    output.write('\n')
-                    # print j, '\t', original, '\t', line[alts[j]]
+        logging.info(classify_report)

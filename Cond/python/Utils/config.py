@@ -11,14 +11,24 @@ LEARNING_ALG = ENV_CONFIG.get('LEARNING', 'algorithm')
 BU_DIRE = 'bottom_up'
 TD_DIRE = 'top_down'
 RC_DIRE = 'recur'
-PL_DIRE = 'plain'
-DIRECTIONS = [BU_DIRE, TD_DIRE, RC_DIRE, PL_DIRE]
+RCBU_DIRE = 'recur_bu'
+DIRECTIONS = [BU_DIRE, TD_DIRE, RC_DIRE, RCBU_DIRE]
 
 EXPR_MISSION = 'expr'
 VAR_MISSION = 'var'
 V0_MISSION = 'v0'
 RECURNODE_MISSION = 'recurnode'
-MISSION_TYPE = [EXPR_MISSION, VAR_MISSION, V0_MISSION, RECURNODE_MISSION]
+RCBU_V0_MISSION = 'v0'
+RCBU_V1_MISSION = 'v1'
+RCBU_E0_MISSION = 'e0'
+RCBU_E1_MISSION = 'e1'
+RCBU_R0_MISSION = 'r0'
+RCBU_R1_MISSION = 'r1'
+
+MISSION_TYPE = [EXPR_MISSION, VAR_MISSION, V0_MISSION, RECURNODE_MISSION,
+                RCBU_V0_MISSION, RCBU_V1_MISSION, RCBU_E0_MISSION, RCBU_E1_MISSION, RCBU_R0_MISSION, RCBU_R1_MISSION]
+
+RCBU_MISSION_TYPE = [RCBU_V0_MISSION, RCBU_V1_MISSION, RCBU_E0_MISSION, RCBU_E1_MISSION, RCBU_R0_MISSION, RCBU_R1_MISSION]
 
 
 class Configure(object):
@@ -70,9 +80,16 @@ class Configure(object):
     def get_gen_expr_top(self):
         return self.__gen_expr_top__
 
+    def get_rcbu_raw_train_file(self, step):
+        assert self.__direction__ == RCBU_DIRE
+        assert step is not None
+        return self.__input_base_path__ + '/var/' + self.__project_name__ + '_' + self.__bug_id__ + '.recurbu.' + step + '.csv'
+
     def get_raw_v0_train_in_file(self):
-        assert self.__direction__ == BU_DIRE
-        return self.__input_base_path__ + '/var/' + self.__project_name__ + '_' + self.__bug_id__ + '.v0.csv'
+        if self.__direction__ == BU_DIRE:
+            return self.__input_base_path__ + '/var/' + self.__project_name__ + '_' + self.__bug_id__ + '.v0.csv'
+        else:
+            assert False
 
     def get_raw_var_train_in_file(self):
         if self.__direction__ == TD_DIRE:
@@ -84,19 +101,29 @@ class Configure(object):
         else:
             assert False
 
-    def get_raw_expr_train_in_file(self):
+    def get_raw_expr_train_in_file(self, upward=False):
         if self.__direction__ == TD_DIRE:
             return self.__input_base_path__ + '/expr/' + self.__project_name__ + '_' + self.__bug_id__ + '.topdown.expr.csv'
         elif self.__direction__ == BU_DIRE:
             return self.__input_base_path__ + '/expr/' + self.__project_name__ + '_' + self.__bug_id__ + '.expr.csv'
         elif self.__direction__ == RC_DIRE:
             return self.__input_base_path__ + '/expr/' + self.__project_name__ + '_' + self.__bug_id__ + '.recur.expr.csv'
+        elif self.__direction__ == RCBU_DIRE:
+            if upward:
+                return self.__input_base_path__ + '/expr/' + self.__project_name__ + '_' + self.__bug_id__ + '.recurbu.e0.csv'
+            else:
+                return self.__input_base_path__ + '/expr/' + self.__project_name__ + '_' + self.__bug_id__ + '.recurbu.e1.csv'
         else:
             assert False
 
-    def get_raw_recur_node_train_in_file(self):
+    def get_raw_recur_node_train_in_file(self, upward=False):
         if self.__direction__ == RC_DIRE:
             return self.__input_base_path__ + '/recur/' + self.__project_name__ + '_' + self.__bug_id__ + '.recur.csv'
+        elif self.__direction__ == RCBU_DIRE:
+            if upward:
+                return self.__input_base_path__ + '/recur/' + self.__project_name__ + '_' + self.__bug_id__ + '.recurbu.r0.csv'
+            else:
+                return self.__input_base_path__ + '/recur/' + self.__project_name__ + '_' + self.__bug_id__ + '.recurbu.r1.csv'
         else:
             assert False
 
@@ -105,7 +132,7 @@ class Configure(object):
             os.makedirs(self.__model_path__)
         return self.__model_path__ + self.__project_name__ + '_' + self.__bug_id__
 
-    def get_xgb_model_file(self, direction, mission_type):
+    def get_model_file(self, direction, mission_type):
 
         if direction == BU_DIRE:
             if mission_type == V0_MISSION:
@@ -134,6 +161,10 @@ class Configure(object):
             elif mission_type == RECURNODE_MISSION:
                 return self.get_recurnode_model_file()
 
+        elif direction == RCBU_DIRE:
+            assert mission_type in RCBU_MISSION_TYPE
+            return self.get_rcbu_model_file(mission_type)
+
         else:
             assert False
 
@@ -146,6 +177,13 @@ class Configure(object):
             return self.__model_path__ + self.__project_name__ + '_' + self.__bug_id__ + '.v0_' + LEARNING_ALG + '.model.pkl'
         else:
             return self.__model_path__ + self.__project_name__ + '_' + self.__bug_id__ + '.v0_model.pkl'
+
+    def get_rcbu_model_file(self, step):
+        if not os.path.exists(self.__model_path__):
+            os.makedirs(self.__model_path__)
+
+        assert LEARNING_ALG == 'xgb'
+        return self.__model_path__ + self.__project_name__ + '_' + self.__bug_id__ + '.' + step + '_model.pkl'
 
     def get_var_model_file(self):
         # python/model/math_1.var_model.pkl
@@ -267,11 +305,13 @@ class Configure(object):
 
     @staticmethod
     def get_tags_for_pca(mission_type):
-        if mission_type == V0_MISSION:
+        if mission_type == V0_MISSION or mission_type == RCBU_V0_MISSION:
             return Configure.get_v0_tags_for_pca()
-        elif mission_type == EXPR_MISSION:
+        elif mission_type == EXPR_MISSION or \
+                mission_type == RCBU_E0_MISSION or \
+                mission_type == RCBU_E1_MISSION:
             return Configure.get_expr_tags_for_pca()
-        elif mission_type == VAR_MISSION:
+        elif mission_type == VAR_MISSION or mission_type == RCBU_V1_MISSION:
             return Configure.get_var_tags_for_pca()
         else:
             assert False
@@ -370,14 +410,14 @@ class Configure(object):
              'bes0', 'bes1', 'bes2', 'bes3', 'bes4', 'bes5', 'bds0', 'bds1', 'bds2', 'bds3',
              'afs0', 'afs1', 'afs2', 'afs3', 'lv0', 'lv1', 'lv2', 'lv3',
              'befcd', 'befpre', 'pstmt0', 'pstmt1', 'nstmt0', 'nstmt1',
-             'isroot', 'parenttp', 'siblingtp', 'location']
+             'isroot', 'parenttp', 'siblingtp', 'location', 'cld0tp', 'cld1tp', 'nodetp']
         return columns
 
     @staticmethod
     def get_removed_label_for_expr():
         '''
         ['filename', 'tdname', 'methodname', 'mtdmod', 'mtdln', 'locnum', 'paranum', 'fldnum',
-        'allloc', 'allloctp', 'locintnm', 'locfltnm', 'locarrnm', 'allfld', 'allfldtp', 'inloop', \
+        'allloc', 'allloctp', 'locintnm', 'locfltnm', 'locarrnm', 'allfld', 'allfldtFp', 'inloop', \
         'bodyctl', 'befsyn', 'bdsyn', 'afsyn', 'bes0', 'bes1', 'bes2', 'bes3', 'bes4', 'bes5', 'bds0', \
         'bds1', 'bds2', 'bds3', 'afs0', 'afs1', 'afs2', 'afs3', 'lv0', 'lv1', 'lv2', 'lv3', 'pstmt0', \
         'pstmt1', 'nstmt0', 'nstmt1', 'befcd', 'befpre']

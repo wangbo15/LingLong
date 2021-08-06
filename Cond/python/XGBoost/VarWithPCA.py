@@ -10,6 +10,8 @@ from sklearn import metrics
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
+from sklearn import tree
+from sklearn.ensemble import RandomForestClassifier
 
 import numpy as np
 
@@ -24,6 +26,8 @@ ENV_CONFIG = ConfigParser.ConfigParser()
 ENV_CONFIG.read("env.conf")
 LEARNING_ALG = ENV_CONFIG.get('LEARNING', 'algorithm')
 
+VAR_UPWARD_MISSION = [V0_MISSION, RCBU_V0_MISSION]
+VAR_DOWNWARD_MISSION = [VAR_MISSION, RCBU_V1_MISSION]
 
 class VarWithPCA(PCAForXgb):
 
@@ -48,13 +52,13 @@ class VarWithPCA(PCAForXgb):
 
         columns = [i for i in X.columns.tolist() ]
 
-        if misson_tp == V0_MISSION:
+        if misson_tp in VAR_UPWARD_MISSION:
             label_encoded_cols = self.__configure__.get_label_for_v0()
 
-        elif misson_tp == VAR_MISSION:
+        elif misson_tp in VAR_DOWNWARD_MISSION:
             label_encoded_cols = self.__configure__.get_label_for_var()
 
-        if LEARNING_ALG == 'xgb' and misson_tp == VAR_MISSION:
+        if LEARNING_ALG == 'xgb' and misson_tp in VAR_DOWNWARD_MISSION:
              X['num0'] = X['num0'].apply(preprocess_numbers)
              X['num1'] = X['num1'].apply(preprocess_numbers)
 
@@ -144,18 +148,41 @@ class VarWithPCA(PCAForXgb):
         model.fit(X, Y)
         return model
 
-    def train(self, is_v0):
-        pca_start_time =  time.time()
+    def train_dt(self, X, Y):
+        model = tree.DecisionTreeClassifier(criterion="entropy")
+        model.fit(X, Y)
+        return model
 
-        if is_v0:
-            var_file = self.__configure__.get_raw_v0_train_in_file()
-            misson_tp = V0_MISSION
-            model_file = self.__configure__.get_v0_model_file()
+    def train_rf(self, X, Y):
+        model = RandomForestClassifier(criterion='entropy', n_estimators=10, random_state=1, n_jobs=-1)
+        model.fit(X, Y)
+        return model
+
+    def train(self, upward):
+        pca_start_time = time.time()
+
+        if self.__configure__.__direction__ == RCBU_DIRE:
+            if upward:
+                var_file = self.__configure__.get_rcbu_raw_train_file(RCBU_V0_MISSION)
+                misson_tp = RCBU_V0_MISSION
+                model_file = self.__configure__.get_model_file(RCBU_DIRE, RCBU_V0_MISSION)
+            else:
+                var_file = self.__configure__.get_rcbu_raw_train_file(RCBU_V1_MISSION)
+                misson_tp = RCBU_V1_MISSION
+                model_file = self.__configure__.get_model_file(RCBU_DIRE, RCBU_V1_MISSION)
+        else:
+            if upward:
+                var_file = self.__configure__.get_raw_v0_train_in_file()
+                misson_tp = V0_MISSION
+                model_file = self.__configure__.get_v0_model_file()
+            else:
+                misson_tp = VAR_MISSION
+                var_file = self.__configure__.get_raw_var_train_in_file()
+                model_file = self.__configure__.get_var_model_file()
+
+        if upward:
             transformed_tags = Configure.get_v0_tags_for_pca()
         else:
-            misson_tp = VAR_MISSION
-            var_file = self.__configure__.get_raw_var_train_in_file()
-            model_file = self.__configure__.get_var_model_file()
             transformed_tags = Configure.get_var_tags_for_pca()
 
         logging.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> START {} {} >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(misson_tp.upper(), LEARNING_ALG.upper()))
@@ -207,7 +234,7 @@ class VarWithPCA(PCAForXgb):
         '''
 
         if LEARNING_ALG == 'xgb':
-            model = self.train_xgb(X, Y, is_v0)
+            model = self.train_xgb(X, Y, upward)
         elif LEARNING_ALG == 'nb':
             # data = pd.concat([I, X, Y], axis=1)
             # if is_v0:
@@ -218,6 +245,10 @@ class VarWithPCA(PCAForXgb):
             model = self.train_naive_bayes(X, Y)
         elif LEARNING_ALG == 'svm':
             model = self.train_svm(X, Y)
+        elif LEARNING_ALG == 'dt':
+            model = self.train_dt(X, Y)
+        elif LEARNING_ALG == 'rf':
+            model = self.train_rf(X, Y)
 
         with open(model_file, 'wb') as f:
             pickle.dump(model, f, protocol=2)
@@ -229,68 +260,3 @@ class VarWithPCA(PCAForXgb):
     def get_metrics(self, y_true, y_pred):
         classify_report = metrics.classification_report(y_true, y_pred)
         logging.info(classify_report)
-
-    def predict(self, is_v0):
-        if is_v0:
-            misson_tp = V0_MISSION
-            data_file_path = self.__configure__.get_raw_v0_pred_in_file()
-            transformed_tags = Configure.get_v0_tags_for_pca()
-            model_file = self.__configure__.get_v0_model_file()
-            var_predicted = self.__configure__.get_v0_pred_out_file()
-        else:
-            misson_tp = VAR_MISSION
-            data_file_path = self.__configure__.get_raw_var_pred_in_file()
-            transformed_tags = Configure.get_var_tags_for_pca()
-            model_file = self.__configure__.get_var_model_file()
-            var_predicted = self.__configure__.get_var_pred_out_file()
-
-        data = pd.read_csv(data_file_path, sep='\t', header=0, encoding='utf-8')
-
-        all_var_name = data['varname'].copy()
-        all_isfld = data['isfld'].copy()
-
-        start = time.time()
-        pca_model_path = self.__configure__.get_pca_model(misson_tp)
-        with open(pca_model_path, 'r') as f:
-            all_model_set = pickle.load(f)
-
-        del_list_file = self.__configure__.get_deleted_zero_columm(misson_tp)
-        with open(del_list_file, 'r') as f:
-            all_deleted_list_dict = pickle.load(f)
-
-        end = time.time()
-        print 'LOAD PCA TIME: ', (end - start)
-
-        pca_df = PCAColumn.get_pca_dataframe(data, self.__configure__,
-                                             misson_tp,
-                                             transformed_tags,
-                                             all_model_set,
-                                             is_training=False,
-                                             all_deleted_list_dict=all_deleted_list_dict)
-
-        with open(self.__configure__.get_all_label_encoders(misson_tp), 'r') as f:
-            all_encoders = pickle.load(f)
-
-        X, nop_Y = self.preprocess(data, pca_df, misson_tp, all_encoders=all_encoders, is_training=False)
-
-        start = time.time()
-        xgb_var_model = pickle.load(open(model_file, 'r'))
-
-        end = time.time()
-        print 'LOAD TIME: ', (end - start)
-
-        M_pred = xgb.DMatrix(X)
-        y_prob = xgb_var_model.predict(M_pred)
-
-        if os.path.exists(var_predicted):
-            os.remove(var_predicted)
-
-        with open(var_predicted, 'w') as output:
-            for i in range(y_prob.shape[0]):
-                # print all_var_name[i], '\t', y_prob[i]
-                if all_isfld[i]:
-                    output.write('{}'.format(all_var_name[i]) + "#F")  #is field
-                else:
-                    output.write('{}'.format(all_var_name[i]))
-                output.write('\t%.17f' % y_prob[i])
-                output.write('\n')

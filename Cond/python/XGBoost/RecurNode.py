@@ -9,6 +9,8 @@ import numpy as np
 
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
+from sklearn import tree
+from sklearn.ensemble import RandomForestClassifier
 
 from sklearn import metrics
 
@@ -18,38 +20,28 @@ from pca.PCAForXgb import PCAForXgb
 
 class RecurNode(PCAForXgb):
 
-    def preprocess(self, ori_file_data, all_encoders, is_training=False):
+    def preprocess(self, ori_file_data, all_encoders, mission_type):
         ori_file_data.drop(['id', 'line', 'column'], axis=1, inplace=True)
-        Y_col = 'nodetp'
+        Y_col = 'parenttp' if mission_type == RCBU_R0_MISSION else 'nodetp'
         Y = ori_file_data[Y_col]
         ori_file_data.drop([Y_col], axis=1, inplace=True)
+        if mission_type == RCBU_R1_MISSION:
+            # all false
+            ori_file_data.drop(['isroot'], axis=1, inplace=True)
         X = ori_file_data
         assert X.shape[0] == Y.shape[0]
 
         label_encoded_cols = self.__configure__.get_label_for_recurnode()
 
         columns = [i for i in X.columns.tolist()]
-        if is_training:
-            for col in columns:
-                if str(col) in label_encoded_cols:
-                    all_encoders[col] = {}
-                    X[col] = self.encoder_column(X[col], all_encoders[col])
+        for col in columns:
+            if str(col) in label_encoded_cols:
+                all_encoders[col] = {}
+                X[col] = self.encoder_column(X[col], all_encoders[col])
 
-            all_encoders['pred'] = {}
-            Y = self.encoder_column(Y, all_encoders['pred'])
-
-            all_columns = np.asarray(X.columns.values)
-            logging.info('>> ALL COLUMNS IN {} EXPR TRAINING DATA'.format(self.__configure__.__direction__.upper()))
-            logging.info(all_columns)
-
-        #for predicting
-        else:
-            Y = None
-            for col in columns:
-                if str(col) in label_encoded_cols:
-                    X[col] = self.encoder_column(X[col], all_encoders[col])
-
-                #TODO: need to dump changed encoder for backup?
+        all_columns = np.asarray(X.columns.values)
+        logging.info('>> ALL COLUMNS IN {} EXPR TRAINING DATA'.format(self.__configure__.__direction__.upper()))
+        logging.info(all_columns)
 
         return X, Y
 
@@ -122,21 +114,39 @@ class RecurNode(PCAForXgb):
         model.fit(X, Y)
         return model
 
-    def train(self):
+    def train_dt(self, X, Y):
+        model = tree.DecisionTreeClassifier(criterion="entropy")
+        model.fit(X, Y)
+        return model
+
+    def train_rf(self, X, Y):
+        model = RandomForestClassifier(criterion='entropy', n_estimators=10, random_state=1, n_jobs=-1)
+        model.fit(X, Y)
+        return model
+
+    def train(self, upward=False):
         logging.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> START RECUR_NODE {} >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(LEARNING_ALG.upper()))
 
-        node_file = self.__configure__.get_raw_recur_node_train_in_file()
+        node_file = self.__configure__.get_raw_recur_node_train_in_file(upward)
         ori_file_data = pd.read_csv(node_file, sep='\t', header=0, encoding='utf-8')
 
         for tag in self.__configure__.get_removed_label_for_recur():
             if tag in ori_file_data.columns:
                 ori_file_data.drop(tag, axis=1, inplace=True)
 
+        if self.__configure__.__direction__ == RCBU_DIRE:
+            if upward:
+                mission = RCBU_R0_MISSION
+            else:
+                mission = RCBU_R1_MISSION
+        else:
+            mission = RECURNODE_MISSION
+
         # label encoder
         start_time = time.time()
         all_encoders = {}
-        X, Y = self.preprocess(ori_file_data, all_encoders=all_encoders, is_training=True)
-        with open(self.__configure__.get_all_label_encoders(RECURNODE_MISSION), 'wb') as f:
+        X, Y = self.preprocess(ori_file_data, all_encoders=all_encoders, mission_type=mission)
+        with open(self.__configure__.get_all_label_encoders(mission), 'wb') as f:
             pickle.dump(all_encoders, f, protocol=2)
 
         encoder_end_time = time.time()
@@ -150,8 +160,12 @@ class RecurNode(PCAForXgb):
             model = self.train_naive_bayes(X, Y)
         elif LEARNING_ALG == 'svm':
             model = self.train_svm(X, Y)
+        elif LEARNING_ALG == 'dt':
+            model = self.train_dt(X, Y)
+        elif LEARNING_ALG == 'rf':
+            model = self.train_rf(X, Y)
 
-        model_file = self.__configure__.get_recurnode_model_file()
+        model_file = self.__configure__.get_model_file(self.__configure__.__direction__, mission)
         with open(model_file, 'wb') as f:
             pickle.dump(model, f, protocol=2)
             print('RECUR_NODE MODEL SAVED AS {}'.format(model_file))
@@ -162,36 +176,3 @@ class RecurNode(PCAForXgb):
     def get_metrics(self, y_true, y_pred):
         classify_report = metrics.classification_report(y_true, y_pred)
         logging.info(classify_report)
-
-    def predict(self):
-        data_file_path = self.__configure__.get_raw_recurnode_pred_in_file()
-        data = pd.read_csv(data_file_path, sep='\t', header=0, encoding='utf-8')
-
-        with open(self.__configure__.get_all_label_encoders(RECURNODE_MISSION), 'r') as f:
-            all_encoders = pickle.load(f)
-
-        start = time.time()
-        X, nop_Y = self.preprocess(data, all_encoders=all_encoders, is_training=False)
-        end = time.time()
-        print 'PREPRO TIME: ', (end - start)
-
-        model_file = self.__configure__.get_recurnode_model_file()
-        xgb_recur_model = pickle.load(open(model_file, 'r'))
-
-        M_pred = xgb.DMatrix(X)
-        y_prob = xgb_recur_model.predict(M_pred)
-        end = time.time()
-
-        line = y_prob[0] # only has one line
-        recur_node_type_num = 4
-        alts = heapq.nlargest(recur_node_type_num, range(len(line)), line.__getitem__)
-        recur_predicted = self.__configure__.get_recurnode_pred_out_file()
-        if os.path.exists(recur_predicted):
-            os.remove(recur_predicted)
-        with open(recur_predicted, 'w') as output:
-            for j in range(recur_node_type_num):
-                label = alts[j]
-                output.write('{}'.format(label))  # predicate
-                output.write('\t%.17f' % line[alts[j]])
-                output.write('\n')
-                # print j, '\t', original, '\t', line[alts[j]]

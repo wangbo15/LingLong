@@ -39,9 +39,9 @@ class PCAForXgb(object):
     def preprocess(self, ori_file_data, all_pca_added_df, is_training=False):
         pass
 
-    @abstractmethod
-    def predict(self):
-        pass
+    # @abstractmethod
+    # def predict(self):
+    #     pass
 
     @abstractmethod
     def get_predicated_label(self, y_pred):

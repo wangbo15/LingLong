@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import sys
 import os
 import commands
@@ -16,7 +18,6 @@ all_csv_path = home_path + pred_config.get('PATH', 'all_csv_path')
 project_root = home_path + pred_config.get('PATH', 'project_root')
 
 DIRECTION = BU_DIRE
-MERGE_JDK = False
 
 
 def execute_cmd(cmd, exitonerr=True):
@@ -32,14 +33,15 @@ def execute_cmd(cmd, exitonerr=True):
     return
 
 
-def copy_csv(pro_name, id):
+def copy_csv(pro_name, id, merge_jdk=False):
+    global DIRECTION
     # mkdir output
     output_path = predictor_path + 'input/' + pro_name + '/' + pro_name + '_' + str(id)
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
     # mkdir input/[var, expr, pred]
-    for mission in ['/var/', '/expr/', '/pred/', '/recur/', '/plain/']:
+    for mission in ['/var/', '/expr/', '/pred/', '/recur/']:
         pro_dir = predictor_path + 'input/' + pro_name + '/' + pro_name + '_' + str(id) + mission
         if not os.path.exists(pro_dir):
             os.makedirs(pro_dir)
@@ -53,12 +55,16 @@ def copy_csv(pro_name, id):
                 cp_cmd_1 = cp_cmd + all_csv_path + '/' + pro_name + '_' + str(id) + '.v0.csv ' + pro_dir
                 execute_cmd(cp_cmd_1)
             if DIRECTION == TD_DIRE:
-                cp_cmd_2 = cp_cmd + all_csv_path + '/' + pro_name + '_' + str(id) + '.topdown.var.csv ' + pro_dir
-                execute_cmd(cp_cmd_2)
+                cp_cmd_0 = cp_cmd + all_csv_path + '/' + pro_name + '_' + str(id) + '.topdown.var.csv ' + pro_dir
+                execute_cmd(cp_cmd_0)
             if DIRECTION == RC_DIRE:
-                cp_cmd_2 = cp_cmd + all_csv_path + '/' + pro_name + '_' + str(id) + '.recur.var.csv ' + pro_dir
-                execute_cmd(cp_cmd_2)
-            # TODO: for plain
+                cp_cmd_0 = cp_cmd + all_csv_path + '/' + pro_name + '_' + str(id) + '.recur.var.csv ' + pro_dir
+                execute_cmd(cp_cmd_0)
+            if DIRECTION == RCBU_DIRE:
+                cp_cmd_0 = cp_cmd + all_csv_path + '/' + pro_name + '_' + str(id) + '.recurbu.v0.csv ' + pro_dir
+                execute_cmd(cp_cmd_0)
+                cp_cmd_1 = cp_cmd + all_csv_path + '/' + pro_name + '_' + str(id) + '.recurbu.v1.csv ' + pro_dir
+                execute_cmd(cp_cmd_1)
 
         elif mission == '/expr/':
             allpred_name =  pro_name + '_' + str(id) + '.allpred.csv'
@@ -77,7 +83,7 @@ def copy_csv(pro_name, id):
                 cp_cmd_2 = cp_cmd + all_csv_path + '/' + expr_name + ' ' + pro_dir
                 execute_cmd(cp_cmd_2)
 
-            if MERGE_JDK:
+            if merge_jdk:
                 if DIRECTION == BU_DIRE:
                     jdk_expr_path = all_csv_path + '/github/jdk7_math.expr.csv'
                 elif DIRECTION == TD_DIRE:
@@ -90,11 +96,22 @@ def copy_csv(pro_name, id):
             if DIRECTION == RC_DIRE:
                 cp_cmd_2 = cp_cmd + all_csv_path + '/' + pro_name + '_' + str(id) + '.recur.expr.csv ' + pro_dir
                 execute_cmd(cp_cmd_2)
-            # TODO: for plain
 
-        if DIRECTION == RC_DIRE and mission == '/recur/':
-            cp_cmd_0 = cp_cmd + all_csv_path + '/' + pro_name + '_' + str(id) + '.recur.csv ' + pro_dir
-            execute_cmd(cp_cmd_0)
+            if DIRECTION == RCBU_DIRE:
+                cp_cmd_0 = cp_cmd + all_csv_path + '/' + pro_name + '_' + str(id) + '.recurbu.e0.csv ' + pro_dir
+                execute_cmd(cp_cmd_0)
+                cp_cmd_1 = cp_cmd + all_csv_path + '/' + pro_name + '_' + str(id) + '.recurbu.e1.csv ' + pro_dir
+                execute_cmd(cp_cmd_1)
+
+        elif mission == '/recur/':
+            if DIRECTION == RC_DIRE:
+                cp_cmd_0 = cp_cmd + all_csv_path + '/' + pro_name + '_' + str(id) + '.recur.csv ' + pro_dir
+                execute_cmd(cp_cmd_0)
+            elif DIRECTION == RCBU_DIRE:
+                cp_cmd_0 = cp_cmd + all_csv_path + '/' + pro_name + '_' + str(id) + '.recurbu.r0.csv ' + pro_dir
+                execute_cmd(cp_cmd_0)
+                cp_cmd_1 = cp_cmd + all_csv_path + '/' + pro_name + '_' + str(id) + '.recurbu.r1.csv ' + pro_dir
+                execute_cmd(cp_cmd_1)
 
     return
 
@@ -163,15 +180,15 @@ if __name__ == '__main__':
         sys.exit(1)
 
     pro_name, id, DIRECTION = sys.argv[1], sys.argv[2], sys.argv[3]
-    # print mode, pro_name, id, tested_bug, bug_no
 
-	# Merge JDK source
+    # Merge JDK source
+    merge_jdk = False
     if len(sys.argv) == 5:
         last = sys.argv[4]
         if last == 'T' or last == 'True':
-            MERGE_JDK = True
+            merge_jdk = True
         elif last == 'F' or last == 'False':
-            MERGE_JDK = False
+            merge_jdk = False
         else:
             print("\nWrong last argument\n!")
             sys.exit(1)
@@ -179,7 +196,7 @@ if __name__ == '__main__':
     assert DIRECTION in DIRECTIONS
 
     os.chdir(predictor_path)
-    print "######## COPYING FOR %s_%s, MERGE_JDK: %s ########" % (pro_name, id, str(MERGE_JDK))
-    copy_csv(pro_name, id)
+    print "######## COPYING FOR %s_%s, MERGE_JDK: %s ########" % (pro_name, id, str(merge_jdk))
+    copy_csv(pro_name, id, merge_jdk)
     # train_model(pro_name, id)
     # clear_out(pro_name, id)

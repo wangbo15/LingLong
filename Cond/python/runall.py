@@ -4,7 +4,7 @@ from set_evn import execute_cmd
 
 PROJECTS = [('lang', '65'), ('math', '106'), ('chart', '26'), ('time', '27')]
 
-XGB_CONFIGS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+XGB_CONFIGS = [1] # [1, 2, 3, 4, 5, 6, 'a', 'b']
 
 JAVA_CMD = 'java -ea -Xms1g -Xmx11g -Dfile.encoding=UTF-8 ' \
            '-classpath /home/nightwish/program_files/jdk1.8.0_241/jre/lib/resources.jar:' \
@@ -78,7 +78,7 @@ if __name__ == '__main__':
         for proj in PROJECTS:
             name = proj[0]
             id = proj[1]
-            print ('################################## PROCESSING CONFIGURE %d ##################################' % i)
+            print ('\n################################## PROCESSING CONFIGURE %d ##################################' % i)
             print ('################################## PROCESSING %s_%s #################################' % (name, id))
             print_cfg()
             process_projects(name, id)
