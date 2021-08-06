@@ -1,6 +1,9 @@
 package edu.pku.sei.conditon.dedu.feature;
 
 public class PositionFeature extends Feature {
+
+	private static final long serialVersionUID = -8374798063801850376L;
+
 	private PredicateFeature predicate;
 	
 	private int position;
@@ -31,4 +34,10 @@ public class PositionFeature extends Feature {
 		return leftNode;
 	}
 
+	@Override
+	public String toString() {
+		return "PRED: " + predicate.getCurrentPred() + ", POS: " + position + ", LOC-IN-PARENT: " + locOfFather
+				+ ", LEFT: " + leftNode;
+	}
+	
 }

@@ -1,16 +1,17 @@
 package edu.pku.sei.conditon.dedu.predall;
 
+import java.util.Collections;
 import java.util.List;
 
 public class PredAllResult {
-	private String oracle;
+	private String oracle = "";
 	private String score = Double.NEGATIVE_INFINITY + "";
-	private int ranking;
-	private List<String> conditions;
-	private List<String> predSequence;
+	private int ranking = -1;
+	private List<String> conditions = Collections.emptyList();
+	private List<String> predSequence = Collections.emptyList();
 
-	private int compileTime;
-	private int compileFailingTime;
+	private int compileTime = 0;
+	private int compileFailingTime = 0;
 	
 	public PredAllResult(String oracle) {
 		this.oracle = oracle;

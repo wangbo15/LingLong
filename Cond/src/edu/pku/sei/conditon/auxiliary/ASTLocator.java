@@ -29,7 +29,6 @@ import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.NullLiteral;
 import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
-import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
@@ -511,11 +510,17 @@ public class ASTLocator {
 				|| expr instanceof BooleanLiteral
 				|| expr instanceof CharacterLiteral;
 	}
-
+	
+	/**
+	 * remove the useless braces of expr
+	 * @param expr
+	 * @return
+	 */
 	public static Expression removeBraces(Expression expr){
 		while(expr instanceof ParenthesizedExpression) {
 			expr = ((ParenthesizedExpression) expr).getExpression();
 		}
 		return expr;
 	}
+	
 }

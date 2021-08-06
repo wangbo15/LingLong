@@ -51,7 +51,7 @@ public class RecurBoolNode extends BoolNode {
 		public static final Opcode NOT = new Opcode("!", 1);
 		public static final Opcode AND = new Opcode("&&", 2);
 		public static final Opcode OR = new Opcode("||", 2);
-		
+				
 		private static final Map<String, Opcode> CODES = new HashMap<String, Opcode>();
 		private static final Map<Opcode, Integer> CODES_TO_LABEL = new HashMap<Opcode, Integer>(); 
 		private static final Map<Integer, Opcode> LABEL_TO_CODE = new HashMap<Integer, Opcode>(); 
@@ -86,7 +86,12 @@ public class RecurBoolNode extends BoolNode {
 	private Opcode opcode = null;
 	private Expression expr;
 	private Location locationInParent;
+	
+	/** distance to the root */
 	private int depthLevel;
+	
+	/** distance to the leaf */
+	private int hight;
 	
 	private CondVector condVector;
 	
@@ -107,10 +112,9 @@ public class RecurBoolNode extends BoolNode {
 		if(this.opcode == null) {
 			throw new IllegalArgumentException(op);
 		}
-		
 		this.expr = expr;
 	}
-		
+	
 	@Override
 	public RecurBoolNode getParent() {
 		return (RecurBoolNode) parent;
@@ -162,6 +166,14 @@ public class RecurBoolNode extends BoolNode {
 		this.depthLevel = depthLevel;
 	}
 	
+	public int getHight() {
+		return hight;
+	}
+
+	public void setHight(int hight) {
+		this.hight = hight;
+	}
+
 	public void setCondVector(CondVector condVec) {
 		assert this.opcode == Opcode.NONE;
 		assert condVec != null;
@@ -220,11 +232,11 @@ public class RecurBoolNode extends BoolNode {
 	}
 	
 
-	private String feature = null;
+	private String downwardFeature = null;
 
-	public String genFeature() {
-		if(feature != null) {
-			return feature;
+	public String genDownwardFeature() {
+		if(downwardFeature != null) {
+			return downwardFeature;
 		}
 		List<String> lineList = new ArrayList<>();
 		boolean isRoot = this.parent == null;
@@ -261,9 +273,42 @@ public class RecurBoolNode extends BoolNode {
 		lineList.add(locationInParent.toString());
 		lineList.add("" + depthLevel);
 		
-		feature = StringUtil.join(lineList, del);
-		return feature;
+		downwardFeature = StringUtil.join(lineList, del);
+		return downwardFeature;
 	}
+	
+	/** NIL represents empty */
+	private final static String NIL = "NIL"; 
+	
+	private String upwardFeature = null;
+	/**
+	 * @return Feature list: "nodetp	cld0tp	cld1tp	hight"
+	 */
+	public String genUpwardFeature() {
+		if (upwardFeature != null) {
+			return upwardFeature;
+		}
+		
+		List<String> lineList = new ArrayList<>();
+		lineList.add(this.getOpcode().toString());
+		
+		if(child0 == null) {
+			lineList.add(NIL);
+		} else {
+			lineList.add(child0.getOpcode().toString());
+		}
+		
+		if (child1 == null) {
+			lineList.add(NIL);
+		} else {
+			lineList.add(child0.getOpcode().toString());
+		}
+		
+		lineList.add("" + hight);
+		upwardFeature = StringUtil.join(lineList, del);
+		return upwardFeature;
+	}
+
 	
 	public static String getFeatureHeader() {
 		return Feature.genFeatureHeaderFromList("recur");

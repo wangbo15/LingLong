@@ -7,12 +7,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeSet;
 
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.Expression;
 
 import edu.pku.sei.conditon.dedu.DeduFeatureGenerator;
 import edu.pku.sei.conditon.dedu.extern.AbsInvoker;
@@ -48,33 +47,34 @@ public class BUPathFinder extends PathFinder{
 		Map<String, VariableInfo> allVarInfoMap = DeduFeatureGenerator.getAllVariablesMap();
 		Map<String, String> varToVarFeaMap = DeduFeatureGenerator.getVarToVarFeatureMap(projAndBug, model, srcRoot, testRoot, filePath, line);
 		
-		if(!CONFIG.isPredAll() && ConstTrue.isTargetRetThrow(hitNode)) {
-			VariableInfo theTrueInfo = ConstTrue.getTheTrueConstVariableInfo();			
-			allVarInfoMap.put(ConstTrue.CONSTANT_TRUE, theTrueInfo);
-			String varFeature = ConstTrue.genVarFeature(theTrueInfo);
-			varToVarFeaMap.put(ConstTrue.CONSTANT_TRUE, varFeature);
+		if(!varToVarFeaMap.isEmpty()) {
+			if(!CONFIG.isPredAll() && ConstTrue.isTargetRetThrow(hitNode)) {
+				VariableInfo theTrueInfo = ConstTrue.getTheTrueConstVariableInfo();			
+				allVarInfoMap.put(ConstTrue.CONSTANT_TRUE, theTrueInfo);
+				String varFeature = ConstTrue.genVarFeature(theTrueInfo);
+				varToVarFeaMap.put(ConstTrue.CONSTANT_TRUE, varFeature);
+			}
+			
+			String ctxFea = DeduFeatureGenerator.generateContextFeature(projAndBug, model, srcRoot, testRoot, filePath, line);
+			
+			// make start
+			ProgramPoint start = makeStart();
+			
+			TreeSet<Path> results = getResults(start, ctxFea, varToVarFeaMap, allVarInfoMap);
+	
+			List<String> lines = Path.getResultLines(results);
+	
+			String proj_Bug_ithSusp = projAndBug + "_" + sid;
+			AbsInvoker.dumpPlainResult(proj, proj_Bug_ithSusp, lines);
 		}
-		
-		String ctxFea = DeduFeatureGenerator.generateContextFeature(projAndBug, model, srcRoot, testRoot, filePath, line);
-		
-		// make start
-		ProgramPoint start = makeStart();
-		
-		TreeSet<Path> results = getResults(start, ctxFea, varToVarFeaMap, allVarInfoMap);
-
-		List<String> lines = Path.getResultLines(results);
-
-		String proj_Bug_ithSusp = projAndBug + "_" + sid;
-		AbsInvoker.dumpPlainResult(proj, proj_Bug_ithSusp, lines);
-		
 		invoker.finish();
 	}
-	
 
-	private ProgramPoint makeStart() {
-		TreePredItem root = new TreePredItem(null);
+	protected ProgramPoint makeStart() {
+		TreePredItem root = TreePredItem.getRootInstance(true);
 		RecurNodePredItem expandItem = new RecurNodePredItem(Opcode.NONE.toLabel(), 1.0);
 		root.setExpandItem(expandItem);
+		root.setTau(true);
 		
 		ProgramPoint startPoint = new ProgramPoint(null, root, 0.0D, 1);
 		return startPoint;
@@ -310,7 +310,7 @@ public class BUPathFinder extends PathFinder{
 		return results;
 	}
 	
-	private Map<String, String> connectCtxFeaAndVarFea(String ctxFea, Map<String, String> varToVarFeaMap) {
+	public static Map<String, String> connectCtxFeaAndVarFea(String ctxFea, Map<String, String> varToVarFeaMap) {
 		Map<String, String> varToCtxAndVarFeaMap = new HashMap<>();
 		for(Entry<String, String> entry: varToVarFeaMap.entrySet()) {
 			varToCtxAndVarFeaMap.put(entry.getKey(), ctxFea + "\t" + entry.getValue());

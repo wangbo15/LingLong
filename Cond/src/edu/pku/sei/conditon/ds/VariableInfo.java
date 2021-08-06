@@ -57,8 +57,17 @@ public class VariableInfo {
 	
 	private VariableFeature variableFeature;
 	
+	/** Field for deductive conditions */
+	private PredicateFeature predicateFeature = null; //predicated
+	
+	/** Field for deductive conditions */
+	private final List<PositionFeature> positionFeatures = new ArrayList<>(1);// positions
+	
 	public VariableInfo(SimpleName decleartion, String nameLiteral, String type, 
 			boolean isParam, boolean isField, boolean isFinal){
+		
+		//System.out.println(nameLiteral + ":\t" + this.hashCode());
+		
 		this.def = decleartion;
 		
 		boolean isForIndexer = ASTLocator.isForIndexer(decleartion);
@@ -106,13 +115,6 @@ public class VariableInfo {
 		return variableFeature;
 	}
 	
-	/*
-	 * Fields for deductive condations
-	 */
-	private PredicateFeature predicateFeature = null; //predicated
-	
-	private List<PositionFeature> positionFeatures = new ArrayList<>(1);// positions
-
 	public PredicateFeature getPredicateFeature(){
 		return predicateFeature;
 	}
@@ -270,5 +272,14 @@ public class VariableInfo {
 
 		//return StringUtil.join(variableFeatureList, del);
 		return StringUtil.join(variableFeatureList, del);
+	}
+	
+	public PositionFeature getPositionFeature(int slopIndex) {
+		for (PositionFeature pf : positionFeatures) {
+			if (pf.getPosition() == slopIndex) {
+				return pf;
+			}
+		}
+		return null;
 	}
 }

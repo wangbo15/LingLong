@@ -194,7 +194,7 @@ public class ConcretePredictor extends Predictor{
 		
 		List<TreePredItem> leafs = tree.getLeafsForCompleteTree();
 		for(TreePredItem node: leafs) {
-			String recurNodeFea = node.getFeature() + node.getExpandItem().getOpcode().toLabel();
+			String recurNodeFea = node.getDownwardFeature() + node.getExpandItem().getOpcode().toLabel();
 			String line = ctxFea + recurNodeFea + "\t?";
 			List<ExprPredItem> exprs = invoker.predictRecurExprs(line);
 			
@@ -216,7 +216,7 @@ public class ConcretePredictor extends Predictor{
 		List<TreePredItem> leafs = tree.getLeafsForCompleteTree();
 
 		for(TreePredItem node: leafs) {
-			String recurNodeFea = node.getFeature() + node.getExpandItem().getOpcode().toLabel();
+			String recurNodeFea = node.getDownwardFeature() + node.getExpandItem().getOpcode().toLabel();
 			String line = ctxFea + recurNodeFea + "\t?";
 			List<ExprPredItem> exprs = invoker.predictRecurExprs(line);
 			List<ExprPredItem> allExprs = new ArrayList<>(CONFIG.getExprLimit());
@@ -259,7 +259,7 @@ public class ConcretePredictor extends Predictor{
 		}
 		
 		List<TreePredItem> roots = new ArrayList<>();
-		TreePredItem root = new TreePredItem(null);
+		TreePredItem root = TreePredItem.getRootInstance(false);
 		roots.add(root);
 		
 		predictCurrNodeType(ctxFea, root, roots);
@@ -302,9 +302,9 @@ public class ConcretePredictor extends Predictor{
 	}
 	
 	private TreePredItem predTheLargestTree(String ctxFea) {
-		TreePredItem root = new TreePredItem(null);
-		String feature = ctxFea + root.getFeature() + "?";
-		List<RecurNodePredItem> rootTypes = invoker.predictForNodeTypes(feature);
+		TreePredItem root = TreePredItem.getRootInstance(false);
+		String feature = ctxFea + root.getDownwardFeature() + "?";
+		List<RecurNodePredItem> rootTypes = invoker.predictRecurNodes(feature);
 		
 		RecurNodePredItem none = new RecurNodePredItem(Opcode.NONE.toLabel(), 1);
 		if(rootTypes.isEmpty()) {
@@ -316,14 +316,14 @@ public class ConcretePredictor extends Predictor{
 		root.setExpandItem(largest);
 		
 		if(largest.getOpcode().equals(Opcode.AND) || largest.getOpcode().equals(Opcode.OR)) {
-			TreePredItem child0 = new TreePredItem(root);
+			TreePredItem child0 = TreePredItem.getInstance(root);
 			root.setChild0(child0);
 			child0.setExpandItem(none);
-			TreePredItem child1 = new TreePredItem(root);
+			TreePredItem child1 = TreePredItem.getInstance(root);
 			root.setChild1(child1);
 			child1.setExpandItem(none);
 		} else if (largest.getOpcode().equals(Opcode.NOT)){
-			TreePredItem child0 = new TreePredItem(root);
+			TreePredItem child0 = TreePredItem.getInstance(root);
 			root.setChild0(child0);
 			child0.setExpandItem(none);
 		}
@@ -337,9 +337,9 @@ public class ConcretePredictor extends Predictor{
 			return;
 		}
 		
-		String currFeature = currNode.getFeature();
+		String currFeature = currNode.getDownwardFeature();
 		String line = ctxFea + currFeature + "?";
-		List<RecurNodePredItem> dummyTypes = invoker.predictForNodeTypes(line);
+		List<RecurNodePredItem> dummyTypes = invoker.predictRecurNodes(line);
 		
 		TreePredItem root = currNode.getRoot();
 		
@@ -361,12 +361,12 @@ public class ConcretePredictor extends Predictor{
 			newCurrNode.setExpandItem(type);
 			
 			if(newCurrNode.canExpandChild0()) {
-				TreePredItem child0 = new TreePredItem(newCurrNode);
+				TreePredItem child0 = TreePredItem.getInstance(newCurrNode);
 				newCurrNode.setChild0(child0);
 				predictCurrNodeType(ctxFea, child0, roots);
 			}
 			if(newCurrNode.canExpandChild1()) {
-				TreePredItem child1 = new TreePredItem(newCurrNode);
+				TreePredItem child1 = TreePredItem.getInstance(newCurrNode);
 				newCurrNode.setChild1(child1);
 				predictCurrNodeType(ctxFea, child1, roots);
 			}
@@ -377,7 +377,7 @@ public class ConcretePredictor extends Predictor{
 		TreePredItem largest = predTheLargestTree(ctxFea);
 		
 		for(TreePredItem node: largest.getLeafsForCompleteTree()) {
-			String recurNodeFea = node.getFeature() + node.getExpandItem().getOpcode().toLabel();
+			String recurNodeFea = node.getDownwardFeature() + node.getExpandItem().getOpcode().toLabel();
 			String line = ctxFea + recurNodeFea + "\t?";
 			List<ExprPredItem> exprs = invoker.predictRecurExprs(line);
 			

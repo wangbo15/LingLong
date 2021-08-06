@@ -8,39 +8,29 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jdt.core.dom.Expression;
 
-import edu.pku.sei.conditon.dedu.AbstractDeduVisitor;
+import edu.pku.sei.conditon.dedu.extern.datagenerator.BUDataGenerator;
+import edu.pku.sei.conditon.dedu.extern.datagenerator.DataGenerator;
+import edu.pku.sei.conditon.dedu.extern.datagenerator.RecurBUDataGenerator;
+import edu.pku.sei.conditon.dedu.extern.datagenerator.RecurDataGenerator;
+import edu.pku.sei.conditon.dedu.extern.datagenerator.TDDataGenerator;
 import edu.pku.sei.conditon.dedu.pred.ExprPredItem;
 import edu.pku.sei.conditon.dedu.pred.OriPredItem;
 import edu.pku.sei.conditon.dedu.pred.RecurNodePredItem;
 import edu.pku.sei.conditon.dedu.pred.VarPredItem;
+import edu.pku.sei.conditon.dedu.writer.BUWriter;
+import edu.pku.sei.conditon.dedu.writer.TDWriter;
 import edu.pku.sei.conditon.ds.VariableInfo;
 import edu.pku.sei.conditon.util.CollectionUtil;
-import edu.pku.sei.conditon.util.StringUtil;
 
 public class SocketInvoker extends AbsInvoker{
+
 	public static final String IP = "localhost";
 	public static final int DEFAULT_PORT = 6666;
-	
-	private static final String CLOSE_MSG = "#@!CLOSE\n";
-	
-	private static final String BU_V0_MSG = "#@!>>BU_V0";
-	private static final String BU_EXPR_MSG = "#@!>>BU_EXPR";
-	private static final String BU_VAR_MSG = "#@!>>BU_VAR";
-	
-	private static final String TD_EXPR_MSG = "#@!>>TD_EXPR";
-	private static final String TD_VAR_MSG = "#@!>>TD_VAR";
-	
-	private static final String RECUR_NODE_MSG = "#@!>>RC_NODE";
-	private static final String RECUR_EXPR_MSG = "#@!>>RC_EXPR";
-	private static final String RECUR_VAR_MSG = "#@!>>RC_VAR";
-
-	private static final String MSG_END = "#@!<<<<";
 	
 	private Socket socket;
 	private PrintWriter out;
@@ -79,10 +69,10 @@ public class SocketInvoker extends AbsInvoker{
 		String content = "";
 		String header = "";
 		if("BU".equals(direction)) {
-			header = AbstractDeduVisitor.getButtomUpStepOneHeader().trim();
-			content = BU_EXPR_MSG + "\n" + header + "\n" + featureLine + "\n" + MSG_END;
+			header = BUWriter.getButtomUpStepOneHeader().trim();
+			content = DataGenerator.BU_EXPR_MSG + "\n" + header + "\n" + featureLine + "\n" + DataGenerator.MSG_END;
 		}else if("TD".equals(direction)) {
-			header = AbstractDeduVisitor.getTopDownStepZeroHeader().trim();
+			header = TDWriter.getTopDownStepZeroHeader().trim();
 			
 			int num = header.split("\t").length - 1;
 			String[] arr = featureLine.split("\t");
@@ -91,7 +81,7 @@ public class SocketInvoker extends AbsInvoker{
 				resLine = resLine + "\t" + arr[i];
 			}
 			resLine = resLine + "\t?";
-			content = TD_EXPR_MSG + "\n" + header + "\n" + resLine + "\n" + MSG_END;
+			content = DataGenerator.TD_EXPR_MSG + "\n" + header + "\n" + resLine + "\n" + DataGenerator.MSG_END;
 			
 			System.err.println(resLine);
 		}
@@ -107,8 +97,8 @@ public class SocketInvoker extends AbsInvoker{
 		String header = "";
 		if("BU".equals(direction)) {
 			//if(n == 0) {
-			header = AbstractDeduVisitor.getButtomUpStepZeroHeader().trim();
-			content = BU_V0_MSG + "\n" + header + "\n";
+			header = BUWriter.getButtomUpStepZeroHeader().trim();
+			content = DataGenerator.BU_V0_MSG + "\n" + header + "\n";
 			for(String line: featureLines) {
 				String newLine = "";
 				int num = header.split("\t").length;
@@ -125,11 +115,11 @@ public class SocketInvoker extends AbsInvoker{
 			//	content = BU_VAR_MSG + "\n" + header + "\n";
 			//} 
 		} else if("TD".equals(direction)) {
-			header = AbstractDeduVisitor.getTopDownStepOneHeader().trim();
-			content = TD_VAR_MSG + "\n" + header + "\n";
+			header = TDWriter.getTopDownStepOneHeader().trim();
+			content = DataGenerator.TD_VAR_MSG + "\n" + header + "\n";
 		}
 		
-		content += MSG_END;
+		content += DataGenerator.MSG_END;
 		//System.err.println(content);
 		writeToServer(content);
 		List<VarPredItem> varsAtN = getSortedVarList(allVarInfoMap, n);
@@ -147,7 +137,7 @@ public class SocketInvoker extends AbsInvoker{
 	public void finish() {
 		if(this.socket != null && !this.socket.isClosed()) {
 			try {
-				this.writeToServer(CLOSE_MSG);
+				this.writeToServer(DataGenerator.CLOSE_MSG);
 				this.socket.close();
 				
 				System.out.println("Client disconnect!!");
@@ -160,7 +150,7 @@ public class SocketInvoker extends AbsInvoker{
 	
 	@Override
 	public List<ExprPredItem> predictTDExprs(String ctxFea) {
-		String exprData = genTopDownExprDataForServer(ctxFea);
+		String exprData = TDDataGenerator.genTopDownExprDataForServer(ctxFea);
 		//System.err.println(exprData);
 		writeToServer(exprData);
 		//TODO: change "fileName" to empty string
@@ -177,7 +167,7 @@ public class SocketInvoker extends AbsInvoker{
 
 	@Override
 	public List<VarPredItem> predictTDVars(int n, List<String> varFeatersAtN, Map<String, VariableInfo> allVarInfoMap){
-		String varData = genTopDownVarDataForServer(varFeatersAtN);
+		String varData = TDDataGenerator.genTopDownVarDataForServer(varFeatersAtN);
 		//System.err.println(varData);
 		writeToServer(varData);
 		List<VarPredItem> varsAtN = getSortedVarList(allVarInfoMap, n);
@@ -187,7 +177,7 @@ public class SocketInvoker extends AbsInvoker{
 	
 	@Override
 	public List<VarPredItem> predictBUV0(Map<String, VariableInfo> allVarInfoMap, Map<String, String> varToFeaPrefixMap){
-		String v0Data = genBottomUpV0DataForServer(varToFeaPrefixMap);
+		String v0Data = BUDataGenerator.genBottomUpV0DataForServer(varToFeaPrefixMap, this.pos0TimeMap);
 		if(v0Data == null) {
 			return Collections.emptyList();
 		}
@@ -200,7 +190,7 @@ public class SocketInvoker extends AbsInvoker{
 
 	@Override
 	public List<ExprPredItem> predictBUExprs(String v0Iter, String curVarFea){
-		String exprData = genBottomUpExprDataForServer(v0Iter, curVarFea);
+		String exprData = BUDataGenerator.genBottomUpExprDataForServer(v0Iter, curVarFea, this.pos0TimeMap);
 		//System.err.println(exprData);
 		writeToServer(exprData);
 		List<ExprPredItem> exprs = getSortedExprList("");
@@ -216,7 +206,7 @@ public class SocketInvoker extends AbsInvoker{
 	
 	@Override
 	public List<VarPredItem> predictBUVars(List<String> varFeatersAtN, Map<String, VariableInfo> allVarInfoMap, int n){
-		String varData = genBottomUpVarDataForServer(varFeatersAtN);
+		String varData = BUDataGenerator.genBottomUpVarDataForServer(varFeatersAtN);
 		writeToServer(varData);
 		List<VarPredItem> varsAtN = getSortedVarList(allVarInfoMap, n);
 		CollectionUtil.remainListFirstK(varsAtN, CONFIG.getVarLimit());
@@ -224,8 +214,8 @@ public class SocketInvoker extends AbsInvoker{
 	}
 	
 	@Override
-	public List<RecurNodePredItem> predictForNodeTypes(String featureLine) {
-		String data = genRecurNodeDataForServer(featureLine);
+	public List<RecurNodePredItem> predictRecurNodes(String featureLine) {
+		String data = RecurDataGenerator.genRecurNodeDataForServer(featureLine);
 		writeToServer(data);
 		List<RecurNodePredItem> predNodes = getSortedRecurNodes();
 		return predNodes;
@@ -233,7 +223,7 @@ public class SocketInvoker extends AbsInvoker{
 	
 	@Override
 	public List<ExprPredItem> predictRecurExprs(String featureLine) {
-		String exprData = genRecurExprDataForServer(featureLine);
+		String exprData = RecurDataGenerator.genRecurExprDataForServer(featureLine);
 		writeToServer(exprData);
 		//TODO: change "fileName" to empty string
 		List<ExprPredItem> exprs = getSortedExprList("");
@@ -243,11 +233,64 @@ public class SocketInvoker extends AbsInvoker{
 	
 	@Override
 	public List<VarPredItem> predictRecurVar(List<String> varFeatersAtN, Map<String, VariableInfo> allVarInfoMap, int n){
-		String data =  genRecurVarDataForServer(varFeatersAtN);
+		String data =  RecurDataGenerator.genRecurVarDataForServer(varFeatersAtN);
 		writeToServer(data);
 		List<VarPredItem> varsAtN = getSortedVarList(allVarInfoMap, n);
 		CollectionUtil.remainListFirstK(varsAtN, CONFIG.getVarLimit());
 		return varsAtN;
+	}
+	
+	@Override
+	public List<VarPredItem> predictRCBUV0(Map<String, VariableInfo> allVarInfoMap,
+			Map<String, String> varToFeaPrefixMap) {
+		String v0Data = RecurBUDataGenerator.genRCBUV0DataForServer(varToFeaPrefixMap);
+		writeToServer(v0Data);
+		List<VarPredItem> vars = getSortedVarList(allVarInfoMap, 0);
+		CollectionUtil.remainListFirstK(vars, CONFIG.getVarLimit());
+		return vars;
+	}
+	
+	@Override
+	public List<VarPredItem> predictRCBUV1(List<String> varFeatersAtN, Map<String, VariableInfo> allVarInfoMap, int n) {
+		String data =  RecurBUDataGenerator.genRCBUV1DataForServer(varFeatersAtN);
+		writeToServer(data);
+		List<VarPredItem> vars = getSortedVarList(allVarInfoMap, 0);
+		CollectionUtil.remainListFirstK(vars, CONFIG.getVarLimit());
+		return vars;
+	}
+	
+	@Override
+	public List<ExprPredItem> predictRCBUE0(String v0Feature){
+		String exprData = RecurBUDataGenerator.genRCBUE0DataForServer(v0Feature);
+		writeToServer(exprData);
+		List<ExprPredItem> exprs = getSortedExprList("");
+		CollectionUtil.remainListFirstK(exprs, CONFIG.getExprLimit());
+		return exprs;
+	}
+	
+	@Override
+	public List<ExprPredItem> predictRCBUE1(String featureLine) {
+		String data = RecurBUDataGenerator.genRCBUE1DataForServer(featureLine);
+		writeToServer(data);
+		List<ExprPredItem> exprs = getSortedExprList("");
+		CollectionUtil.remainListFirstK(exprs, CONFIG.getExprLimit());
+		return exprs;
+	}
+	
+	@Override
+	public List<RecurNodePredItem> predictRCBUR0(String featureLine) {
+		String data = RecurBUDataGenerator.genRCBUR0DataForServer(featureLine);
+		writeToServer(data);
+		List<RecurNodePredItem> predNodes = getSortedRecurNodes();
+		return predNodes;
+	}
+	
+	@Override
+	public List<RecurNodePredItem> predictRCBUR1(String featureLine) {
+		String data = RecurBUDataGenerator.genRCBUR1DataForServer(featureLine);
+		writeToServer(data);
+		List<RecurNodePredItem> predNodes = getSortedRecurNodes();
+		return predNodes;	
 	}
 	
 	private List<RecurNodePredItem> getSortedRecurNodes(){
@@ -262,54 +305,6 @@ public class SocketInvoker extends AbsInvoker{
 			predNodes.add(item);
 		}
 		return predNodes;
-	}
-	
-	private String genRecurNodeDataForServer(String featureLine) {
-		List<String> features = new ArrayList<>(5);
-		features.add(RECUR_NODE_MSG);
-		String header = AbstractDeduVisitor.getRecurNodeTypeHeader().trim();
-		features.add(header);
-		
-		//String line = contextFeature + recurNodeFea + "?";
-		features.add(featureLine);
-		
-		predictTime++;
-		recurNodePredictTime++;
-		
-		features.add(MSG_END);
-		String data = StringUtil.join(features, "\n");
-		return data;
-	}
-
-	private String genRecurExprDataForServer(String line) {
-		List<String> features = new ArrayList<>(5);
-		features.add(RECUR_EXPR_MSG);
-		String header = AbstractDeduVisitor.getRecurNodeExprHeader().trim();
-		features.add(header);
-		//String line = ctxFea + recurNodeFea + "\t?";
-		features.add(line);
-		
-		predictTime++;
-		exprPredictTime++;
-		
-		features.add(MSG_END);
-		String data = StringUtil.join(features, "\n");
-		return data;
-	}
-	
-	private String genRecurVarDataForServer(List<String> features) {
-		List<String> varFeatures = new ArrayList<>(features.size() + 5);
-		varFeatures.add(RECUR_VAR_MSG);
-		String header = AbstractDeduVisitor.getRecurNodeVarHeader().trim();
-		varFeatures.add(header);
-		varFeatures.addAll(features);
-		
-		predictTime += varFeatures.size() - 2;
-		varPredictTime += varFeatures.size() - 2;
-		
-		varFeatures.add(MSG_END);
-		String data = StringUtil.join(varFeatures, "\n");
-		return data;
 	}
 	
 	private List<VarPredItem> getSortedVarList(Map<String, VariableInfo> allVarInfoMap, int position) {
@@ -396,7 +391,7 @@ public class SocketInvoker extends AbsInvoker{
 		try {
 			String line;
 			while ((line = in.readLine()) != null) {
-				if(line.trim().equals(MSG_END)) {
+				if(line.trim().equals(DataGenerator.MSG_END)) {
 					break;
 				}
 				lines.add(line);
@@ -410,101 +405,6 @@ public class SocketInvoker extends AbsInvoker{
 	private void writeToServer(String content) {
 		this.out.print(content);
 		this.out.flush();
-	}
-	
-	private String genBottomUpV0DataForServer(Map<String, String> varToFeaPrefixMap) {
-		List<String> varFeatures = new ArrayList<>(DEFAULT_VAR_RES_NUM);
-		varFeatures.add(BU_V0_MSG);
-		String header = AbstractDeduVisitor.getButtomUpStepZeroHeader().trim();
-		varFeatures.add(header);
-		generateBottomUpV0Lines(varFeatures, varToFeaPrefixMap, pos0TimeMap);
-		
-		if(varFeatures.size() == 2) {
-			return null;
-		}
-		assert checkLines(varFeatures.subList(1, varFeatures.size()));
-		
-		predictTime += varFeatures.size() - 2;
-		varPredictTime += varFeatures.size() - 2;
-		
-		varFeatures.add(MSG_END);
-		String data = StringUtil.join(varFeatures, "\n");
-		return data;
-	}
-	
-	private String genBottomUpExprDataForServer(String v0Iter, String v0Fea) {
-		String posZeroTime = "" + (pos0TimeMap.containsKey(v0Iter) ? pos0TimeMap.get(v0Iter) : 0);
-		String exprLine = StringUtil.connectMulty(del, v0Fea, posZeroTime, "?"); 
-
-		List<String> exprFeatures = new ArrayList<>(5);
-		exprFeatures.add(BU_EXPR_MSG);
-		String header = AbstractDeduVisitor.getButtomUpStepOneHeader().trim();
-		exprFeatures.add(header);
-		exprFeatures.add(exprLine);
-		
-		assert checkLines(exprFeatures.subList(1, exprFeatures.size()));
-		
-		//FileUtil.writeStringToFile("/home/nightwish/tmp/bu.pred.csv", exprLine + "\n", true);
-		
-		predictTime++;
-		exprPredictTime++;
-		
-		exprFeatures.add(MSG_END);
-		String data = StringUtil.join(exprFeatures, "\n");
-		return data;
-	}
-	
-	private String genBottomUpVarDataForServer(List<String> features){
-		List<String> varFeatures = new ArrayList<>(features.size() + 5);
-		varFeatures.add(BU_VAR_MSG);
-		String header = AbstractDeduVisitor.getButtomUpStepTwoHeader().trim();
-		varFeatures.add(header);
-		varFeatures.addAll(features);
-		
-		assert checkLines(varFeatures.subList(1, varFeatures.size()));
-		
-		predictTime += varFeatures.size() - 2;
-		varPredictTime += varFeatures.size() - 2;
-		
-		varFeatures.add(MSG_END);
-		String data = StringUtil.join(varFeatures, "\n");
-		return data;
-	}
-		
-	private static String genTopDownExprDataForServer(String contextFeature) {
-		List<String> exprFeatures = new ArrayList<>(5);
-		exprFeatures.add(TD_EXPR_MSG);
-		String header = AbstractDeduVisitor.getTopDownStepZeroHeader().trim();
-		exprFeatures.add(header);
-		
-		String line = contextFeature + AbstractDeduVisitor.del + "?";
-		exprFeatures.add(line);
-		
-		assert checkLines(exprFeatures.subList(1, exprFeatures.size()));
-		
-		predictTime++;
-		exprPredictTime++;
-		
-		exprFeatures.add(MSG_END);
-		String data = StringUtil.join(exprFeatures, "\n");
-		return data;
-	}
-	
-	private static String genTopDownVarDataForServer(List<String> features) {
-		List<String> varFeatures = new ArrayList<>(features.size() + 5);
-		varFeatures.add(TD_VAR_MSG);
-		String header = AbstractDeduVisitor.getTopDownStepOneHeader().trim();
-		varFeatures.add(header);
-		varFeatures.addAll(features);
-		
-		assert checkLines(varFeatures.subList(1, varFeatures.size()));
-
-		predictTime += varFeatures.size() - 2;
-		varPredictTime += varFeatures.size() - 2;
-		
-		varFeatures.add(MSG_END);
-		String data = StringUtil.join(varFeatures, "\n");
-		return data;
 	}
 	
 	private void hook() {  

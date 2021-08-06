@@ -6,10 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
-import edu.pku.sei.conditon.dedu.DeduFeatureGenerator;
-import edu.pku.sei.conditon.dedu.extern.AbsInvoker;
 import edu.pku.sei.conditon.dedu.grammar.recur.RecurBoolNode.Opcode;
-import edu.pku.sei.conditon.dedu.pf.Path;
 import edu.pku.sei.conditon.dedu.pf.ProgramPoint;
 import edu.pku.sei.conditon.dedu.pred.ExprGenerator;
 import edu.pku.sei.conditon.dedu.pred.ExprPredItem;
@@ -19,7 +16,6 @@ import edu.pku.sei.conditon.dedu.pred.VarPredItem;
 import edu.pku.sei.conditon.ds.VariableInfo;
 import edu.pku.sei.conditon.util.CollectionUtil;
 import edu.pku.sei.conditon.util.MathUtil;
-import edu.pku.sei.conditon.util.TypeUtil;
 
 public class RecurPathFinder extends PathFinder{
 	
@@ -28,33 +24,8 @@ public class RecurPathFinder extends PathFinder{
 		super(projAndBug, srcRoot, testRoot, filePath, line, sid, searchStrategy);
 	}
 	
-	@Override
-	public void entry() throws PathFindingException{
-		// prepare
-		invoker.prepare();
-		
-		DeduFeatureGenerator.getHitNode(projAndBug, model, srcRoot, testRoot, filePath, line);
-		Map<String, VariableInfo> allVarInfoMap = DeduFeatureGenerator.getAllVariablesMap();
-		Map<String, String> varToVarFeaMap = DeduFeatureGenerator.getVarToVarFeatureMap(projAndBug, model, srcRoot, testRoot, filePath, line);
-		
-		String ctxFea = DeduFeatureGenerator.generateContextFeature(projAndBug, model, srcRoot, testRoot, filePath, line);
-		
-		// make start
-		ProgramPoint start = makeStart();
-		
-		TreeSet<Path> results = getResults(start, ctxFea, varToVarFeaMap, allVarInfoMap);
-
-		List<String> lines = Path.getResultLines(results);
-
-		String proj_Bug_ithSusp = projAndBug + "_" + sid;
-		AbsInvoker.dumpPlainResult(proj, proj_Bug_ithSusp, lines);
-		
-		invoker.finish();
-	}
-	
-
-	private ProgramPoint makeStart() {
-		TreePredItem root = new TreePredItem(null);
+	protected ProgramPoint makeStart() {
+		TreePredItem root = TreePredItem.getRootInstance(true);
 		// score = log(1.0) = 0
 		ProgramPoint startPoint = new ProgramPoint(null, root, 0.0D, 1);
 		return startPoint;
@@ -99,9 +70,9 @@ public class RecurPathFinder extends PathFinder{
 			assert treeItem.getExpandItem() == null;
 			
 			// predict next treeItem
-			String currFeature = treeItem.getFeature();
+			String currFeature = treeItem.getDownwardFeature();
 			String line = ctxFea + currFeature + "?";
-			List<RecurNodePredItem> dummyTypes = invoker.predictForNodeTypes(line);
+			List<RecurNodePredItem> dummyTypes = invoker.predictRecurNodes(line);
 			
 			for(RecurNodePredItem type: dummyTypes) {
 				if(type.getScore() < CONFIG.getRnProbLimit()) {
@@ -109,7 +80,7 @@ public class RecurPathFinder extends PathFinder{
 				}
 				TreePredItem newRoot;
 				if(CONFIG.isOpt()) {
-					newRoot = TreePredItem.sharedCopy(root, treeItem);
+					newRoot = TreePredItem.sharedCopyFromLeaf(root, treeItem);
 				} else {
 					newRoot = TreePredItem.deepCloneFromRoot(root);
 				}
@@ -117,11 +88,11 @@ public class RecurPathFinder extends PathFinder{
 				newCurrNode.setExpandItem(type);
 				
 				if(newCurrNode.canExpandChild0()) {
-					TreePredItem child0 = new TreePredItem(newCurrNode);
+					TreePredItem child0 = TreePredItem.getInstance(newCurrNode);
 					newCurrNode.setChild0(child0);
 				}
 				if(newCurrNode.canExpandChild1()) {
-					TreePredItem child1 = new TreePredItem(newCurrNode);
+					TreePredItem child1 = TreePredItem.getInstance(newCurrNode);
 					newCurrNode.setChild1(child1);
 				}
 				
@@ -143,16 +114,21 @@ public class RecurPathFinder extends PathFinder{
 	
 	private List<ProgramPoint> expandExpr(ProgramPoint start, String ctxFea){
 		TreePredItem root = start.getAstRoot();
+		if (!root.isRecurNodeComplete()) {
+			return Collections.emptyList();
+		}
+		
 		List<TreePredItem> expansions = root.exprExpansionPositions();
 		
-		if(expansions.isEmpty())
+		if(expansions.isEmpty()) {
 			return Collections.emptyList();
+		}
 		
 		List<ProgramPoint> results = new ArrayList<>();
 		for(TreePredItem treeItem: expansions) {
 			assert treeItem.getExpandItem() != null && treeItem.getExpandItem().getOpcode() == Opcode.NONE;
 			// predict expr
-			String recurNodeFea = treeItem.getFeature() + treeItem.getExpandItem().getOpcode().toLabel();
+			String recurNodeFea = treeItem.getDownwardFeature() + treeItem.getExpandItem().getOpcode().toLabel();
 			String line = ctxFea + recurNodeFea + "\t?";
 			List<ExprPredItem> exprs = invoker.predictRecurExprs(line);
 			
@@ -166,7 +142,7 @@ public class RecurPathFinder extends PathFinder{
 				}
 				TreePredItem newRoot;
 				if(CONFIG.isOpt()) {
-					newRoot = TreePredItem.sharedCopy(root, treeItem);
+					newRoot = TreePredItem.sharedCopyFromLeaf(root, treeItem);
 				} else {
 					newRoot = TreePredItem.deepCloneFromRoot(root);
 				}
@@ -184,9 +160,12 @@ public class RecurPathFinder extends PathFinder{
 		return results;
 	}
 	
-	private List<ProgramPoint> expandVar(ProgramPoint start, String ctxFea, Map<String, String> varToVarFeaMap,
-			Map<String, VariableInfo> allVarInfoMap){
+	private List<ProgramPoint> expandVar(ProgramPoint start, String ctxFea, Map<String, String> varToVarFeaMap, Map<String, VariableInfo> allVarInfoMap){
 		TreePredItem root = start.getAstRoot();
+		if (!root.isRecurNodeComplete()) {
+			return Collections.emptyList();
+		}
+		
 		List<TreePredItem> expansions = root.varExpansionPositions();
 		
 		if(expansions.isEmpty())
@@ -194,7 +173,7 @@ public class RecurPathFinder extends PathFinder{
 		
 		List<ProgramPoint> results = new ArrayList<>();
 		for(TreePredItem treeItem: expansions) {
-			String recurNodeFea = treeItem.getFeature() + treeItem.getExpandItem().getOpcode().toLabel();
+			String recurNodeFea = treeItem.getDownwardFeature() + treeItem.getExpandItem().getOpcode().toLabel();
 			ExprPredItem expr = treeItem.getExprItem();
 			assert expr != null;
 			
@@ -221,7 +200,7 @@ public class RecurPathFinder extends PathFinder{
 				
 				TreePredItem newRoot;
 				if(CONFIG.isOpt()) {
-					newRoot = TreePredItem.sharedCopy(root, treeItem);
+					newRoot = TreePredItem.sharedCopyFromLeaf(root, treeItem);
 				} else {
 					newRoot = TreePredItem.deepCloneFromRoot(root);
 				}

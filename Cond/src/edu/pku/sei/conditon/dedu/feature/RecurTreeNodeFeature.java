@@ -1,15 +1,15 @@
 package edu.pku.sei.conditon.dedu.feature;
 
-public class RecurTreeNodeFeature extends Feature{
+public class RecurTreeNodeFeature extends Feature {
 
 	private static final long serialVersionUID = -1504533780661342701L;
-	
+
 	private String nodeType;
 	private boolean isRoot;
 	private String parentType;
 	private String locationInParent;
 	private int depth;
-	
+
 	public RecurTreeNodeFeature(String nodeType, boolean isRoot, String parentType, String locationInParent,
 			int depth) {
 		this.nodeType = nodeType;
@@ -42,8 +42,14 @@ public class RecurTreeNodeFeature extends Feature{
 	public int getDepth() {
 		return depth;
 	}
-	
+
+	private static String cache;
+
 	public static String getFeatureHeader() {
-		return Feature.genFeatureHeaderFromList("recur");
+		if (cache != null) {
+			return cache;
+		}
+		cache = Feature.genFeatureHeaderFromList("recur");
+		return cache;
 	}
 }

@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import edu.pku.sei.conditon.dedu.AbstractDeduVisitor;
 import edu.pku.sei.conditon.dedu.pred.ExprGenerator;
 import edu.pku.sei.conditon.dedu.pred.ExprPredItem;
 import edu.pku.sei.conditon.dedu.pred.GenExprItem;
@@ -21,6 +20,7 @@ import edu.pku.sei.conditon.dedu.pred.OriPredItem;
 import edu.pku.sei.conditon.dedu.pred.RecurNodePredItem;
 import edu.pku.sei.conditon.dedu.pred.VarPredItem;
 import edu.pku.sei.conditon.dedu.predall.ConditionConfig;
+import edu.pku.sei.conditon.dedu.writer.AllPredWriter;
 import edu.pku.sei.conditon.ds.VariableInfo;
 import edu.pku.sei.conditon.util.FileUtil;
 import edu.pku.sei.conditon.util.Pair;
@@ -30,11 +30,6 @@ public abstract class AbsInvoker {
 	public static final String PREDICTOR_ROOT = "/home/nightwish/workspace/eclipse/Condition/python/";
 	
 	protected static final ConditionConfig CONFIG = ConditionConfig.getInstance();
-	
-	protected static final String del = AbstractDeduVisitor.del;
-	
-	protected static final int DEFAULT_VAR_RES_NUM = CONFIG.getVarLimit() * 4;
-	protected static final int DEFAULT_EXPR_RES_NUM = CONFIG.getExprLimit();
 	
 	public static Map<String, String> bugToModelMap = new HashMap<>();
 	
@@ -238,12 +233,23 @@ public abstract class AbsInvoker {
 	
 	public abstract List<VarPredItem> predictBUVars(List<String> varFeatersAtN, Map<String, VariableInfo> allVarInfoMap, int n);
 	
-	public abstract List<RecurNodePredItem> predictForNodeTypes(String featureLine);
+	public abstract List<RecurNodePredItem> predictRecurNodes(String featureLine);
 	
 	public abstract List<ExprPredItem> predictRecurExprs(String featureLine);
 
 	public abstract List<VarPredItem> predictRecurVar(List<String> varFeatersAtN, Map<String, VariableInfo> allVarInfoMap, int n);	
 
+	public abstract List<VarPredItem> predictRCBUV0(Map<String, VariableInfo> allVarInfoMap, Map<String, String> varToFeaPrefixMap);
+	
+	public abstract List<VarPredItem> predictRCBUV1(List<String> varFeatersAtN, Map<String, VariableInfo> allVarInfoMap, int n);
+
+	public abstract List<ExprPredItem> predictRCBUE0(String v0Feature);
+	
+	public abstract List<ExprPredItem> predictRCBUE1(String v0Feature);
+	
+	public abstract List<RecurNodePredItem> predictRCBUR0(String featureLine);
+	
+	public abstract List<RecurNodePredItem> predictRCBUR1(String featureLine);
 	
 	private static Pair<String, Map<String, OriPredItem>> path2AllOriPredCache = null;
 	
@@ -266,7 +272,7 @@ public abstract class AbsInvoker {
 			bReader = new BufferedReader(fReader);
 			String line = null;
 			
-			String header = AbstractDeduVisitor.getAllPredHeader();
+			String header = AllPredWriter.getAllPredHeader();
 			while ((line = bReader.readLine()) != null) {
 				
 				if(line.equals(header)) {
@@ -365,20 +371,6 @@ public abstract class AbsInvoker {
 		return output + proj_Bug_ithSusp.toLowerCase() + ".res.csv";
 	}
 	
-	protected static void generateBottomUpV0Lines(List<String> result, Map<String, String> varToFeaPrefixMap, Map<String, Integer> pos0TimeMap) {
-		assert result != null;
-		
-		for(Entry<String, String> entry: varToFeaPrefixMap.entrySet()) {
-			String var = entry.getKey();
-			int at0Time = 0;
-			if(pos0TimeMap.containsKey(var)) {
-				at0Time = pos0TimeMap.get(var);
-			}
-			String line = StringUtil.connectMulty(del, entry.getValue(), "" + at0Time, "?");
-			result.add(line);
-		}
-	}
-	
 	protected static String getFileName(String filePath) {
 		String fileName = filePath.substring(filePath.lastIndexOf("/"));
 		fileName = fileName.substring(0, fileName.length() - 5);	//remove '.java'
@@ -432,20 +424,6 @@ public abstract class AbsInvoker {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-	
-	public static boolean checkLines(List<String> lines) {
-		if(lines.size() <= 1) {
-			return false;
-		}
-		int head = lines.get(0).split("\t").length;
-		for(int i = 1; i < lines.size(); i++) {
-			int curr = lines.get(i).split("\t").length;
-			if(curr != head) {
-				return false;
-			}
-		}
-		return true;
 	}
 	
 	public static void dumpPlainResult(String proj, String proj_Bug_ithSusp, List<String> lines){

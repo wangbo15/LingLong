@@ -269,7 +269,12 @@ public class VariableFeature extends Feature {
 		return "(" + nameLiteral + ", TP= " + type + ", FLD: " + isField + ")";
 	}
 
+	private static String cache;
 	public static String getFeatureHeader() {
-		return Feature.genFeatureHeaderFromList("var");
+		if(cache != null) {
+			return cache;
+		}
+		cache = Feature.genFeatureHeaderFromList("var");
+		return cache;
 	}
 }

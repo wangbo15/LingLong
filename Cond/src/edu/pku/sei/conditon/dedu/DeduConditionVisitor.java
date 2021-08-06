@@ -1,10 +1,6 @@
 package edu.pku.sei.conditon.dedu;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -14,8 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -58,8 +52,6 @@ import edu.pku.sei.conditon.auxiliary.DefUseCompletVisitor;
 import edu.pku.sei.conditon.auxiliary.DollarilizeVisitor;
 import edu.pku.sei.conditon.auxiliary.PredicateFeatureVisitor;
 import edu.pku.sei.conditon.auxiliary.StatisticVisitor;
-import edu.pku.sei.conditon.dedu.extern.AbsInvoker;
-import edu.pku.sei.conditon.dedu.extern.FileInvoker;
 import edu.pku.sei.conditon.dedu.extern.pf.ConstTrue;
 import edu.pku.sei.conditon.dedu.feature.CondVector;
 import edu.pku.sei.conditon.dedu.feature.ContextFeature;
@@ -67,23 +59,24 @@ import edu.pku.sei.conditon.dedu.feature.PositionFeature;
 import edu.pku.sei.conditon.dedu.feature.Predicate;
 import edu.pku.sei.conditon.dedu.feature.PredicateFeature;
 import edu.pku.sei.conditon.dedu.feature.TreeVector;
-import edu.pku.sei.conditon.dedu.feature.VariableFeature;
 import edu.pku.sei.conditon.dedu.grammar.recur.RecurBoolNode;
-import edu.pku.sei.conditon.dedu.grammar.recur.RecurBoolNode.Opcode;
 import edu.pku.sei.conditon.dedu.grammar.recur.RecurGrammar;
 import edu.pku.sei.conditon.dedu.grammar.recur.RecurTree;
 import edu.pku.sei.conditon.dedu.pred.OriPredItem;
 import edu.pku.sei.conditon.dedu.predall.ConditionConfig;
 import edu.pku.sei.conditon.dedu.predall.ConditionConfig.PROCESSING_TYPE;
-import edu.pku.sei.conditon.dedu.predall.PredAllExperiment;
+import edu.pku.sei.conditon.dedu.writer.AllPredWriter;
+import edu.pku.sei.conditon.dedu.writer.BUWriter;
+import edu.pku.sei.conditon.dedu.writer.RecurBUWriter;
+import edu.pku.sei.conditon.dedu.writer.RecurWriter;
+import edu.pku.sei.conditon.dedu.writer.TDWriter;
+import edu.pku.sei.conditon.dedu.writer.Writer;
 import edu.pku.sei.conditon.ds.VariableInfo;
-import edu.pku.sei.conditon.util.FileUtil;
 import edu.pku.sei.conditon.util.JavaFile;
 import edu.pku.sei.conditon.util.OperatorUtil;
 import edu.pku.sei.conditon.util.Pair;
 import edu.pku.sei.conditon.util.StringUtil;
 import edu.pku.sei.conditon.util.TypeUtil;
-import edu.pku.sei.conditon.util.csv.CSVChecker;
 import edu.pku.sei.proj.ClassRepre;
 import edu.pku.sei.proj.PackageRepre;
 import edu.pku.sei.proj.ProInfo;
@@ -101,23 +94,15 @@ public final class DeduConditionVisitor extends AbstractDeduVisitor{
 	
 	public static List<CondVector> plainCondVec = new ArrayList<>(CAPACITY);
 	
-	private static Set<CondVector> duplicatedCondVec = new HashSet<>();
-	
 	public static List<TreeVector> recurTreeList = new ArrayList<>(CAPACITY);
 	
-	private static Set<String> uniqueSet = new HashSet<>();
+	private static Set<CondVector> duplicatedCondVec = new HashSet<>();
+		
+	public static final String UNKNOWN_TYPE = "UNKOWN";
+			
+	private static final RecurGrammar recurGrammar = new RecurGrammar();
 	
-	private final static int UPPER_POS_BOUND = 4;
-	
-	private final static boolean SKIP = true;
-	
-	private final static int SKIP_STEP = Integer.MAX_VALUE;
-	
-	private final static boolean OMITTING_TEST = true;//!DeduMain.processingDefects4J;
-	
-	private final RecurGrammar recurGrammar = new RecurGrammar();
-	
-	private static PROCESSING_TYPE missionType = ConditionConfig.getInstance().getProcessType();
+	private static final PROCESSING_TYPE missionType = ConditionConfig.getInstance().getProcessType();
 	
 	public DeduConditionVisitor(CompilationUnit cu, File f, char[] rawSource, ProInfo proInfo){
 		this.cu = cu;
@@ -133,354 +118,35 @@ public final class DeduConditionVisitor extends AbstractDeduVisitor{
 	
 	public static void reset(){
 		plainCondVec.clear();
+		recurTreeList.clear();
+		duplicatedCondVec.clear();
+		
 		CONDITION_ID = 0;
 		TREE_ID = 0;
 	}
 	
-	private static Pattern pattern = Pattern.compile("[\\s\\t]+");
-
-	
+	/**
+	 * Write the data to files
+	 * @param outFilePrefix
+	 */
 	protected static void writeVectors(String outFilePrefix){
-		
-		System.out.println(uniqueSet.size());
-		for(String s: uniqueSet) {
-			System.out.println(s);
-		}
-		
-		writeAllPred(outFilePrefix);
-		
-		writeButtomUpStep0AndStep1(outFilePrefix);
-		writeButtomUpStep2(outFilePrefix);
+		Writer allPredWriter = new AllPredWriter(outFilePrefix, plainCondVec);
+		allPredWriter.write();
+		List<Writer> list = new ArrayList<>();
+		list.add(new BUWriter(outFilePrefix, plainCondVec, duplicatedCondVec));
 		
 		if(ConditionConfig.getInstance().isPredAll()) {
-			writeRecurTree(outFilePrefix);
-			writeAllTree(outFilePrefix);
-			writeTopDown(outFilePrefix);
+			list.add(new TDWriter(outFilePrefix, plainCondVec));
+			list.add(new RecurWriter(outFilePrefix, recurTreeList));
+			list.add(new RecurBUWriter(outFilePrefix, recurTreeList));
 		}
 		
-	}
-	
-	private static void writeRecurTree(String outFilePrefix) {
-		String path = outFilePrefix + ".recur.csv";
-		FileOutputStream fos0 = null;
-		BufferedOutputStream bs0 = null;
-		
-		String exprPath = outFilePrefix + ".recur.expr.csv";
-		FileOutputStream fos1 = null;
-		BufferedOutputStream bs1 = null;
-		
-		String varPath = outFilePrefix + ".recur.var.csv";
-		FileOutputStream fos2 = null;
-		BufferedOutputStream bs2 = null;
-
-		
-		Map<String, OriPredItem> allOriPredicates = AbsInvoker.loadAllOriPredicate(outFilePrefix + ".allpred.csv");
-
-		try {
-			//recur node
-			fos0 = new FileOutputStream(path, false);
-			bs0 = new BufferedOutputStream(fos0);
-			
-			//top down expr
-			fos1 = new FileOutputStream(exprPath, false);
-			bs1 = new BufferedOutputStream(fos1);
-			
-			//top down var
-			fos2 = new FileOutputStream(varPath, false);
-			bs2 = new BufferedOutputStream(fos2);
-			
-			bs0.write((getRecurNodeTypeHeader() + "\n").getBytes());
-			bs1.write((getRecurNodeExprHeader() + "\n").getBytes());
-			bs2.write((getRecurNodeVarHeader() + "\n").getBytes());
-			
-			int scanedVar = 0;
-
-			for(TreeVector treeVec : recurTreeList) {
-				
-				if(omit(treeVec)) {
-					continue;
-				}
-				
-				String contextFeature = treeVec.genContextFeatureStr();
-				
-				RecurTree tree = treeVec.getTree();
-				
-				List<RecurBoolNode> bfsList = tree.broadFristSearchTraverse();
-
-				for(RecurBoolNode recurBoolNode: bfsList) {
-					
-					List<String> recurNodeTypeList = new ArrayList<>();
-					recurNodeTypeList.add(contextFeature);
-					String recurNodeFeature = recurBoolNode.genFeature();
-					recurNodeTypeList.add(recurNodeFeature);
-					
-					String recurNodeY = "" + recurBoolNode.getOpcode().toLabel();
-					recurNodeTypeList.add(recurNodeY);//Y, node type
-					String recurNodeLine = StringUtil.join(recurNodeTypeList, del) + "\n";
-					bs0.write(recurNodeLine.getBytes());
-					
-					if(recurBoolNode.getOpcode() != Opcode.NONE) {// skip non-leaf node 
-						continue;
-					}
-					List<String> exprLineList = new ArrayList<>();
-					exprLineList.add(contextFeature);
-					exprLineList.add(recurNodeFeature);
-					exprLineList.add(recurNodeY);
-					
-					Predicate pred = recurBoolNode.getCondVector().getPredicate();
-					if(pred.getSlopNum() > UPPER_POS_BOUND || pred.getSlopNum() == 0) {
-						continue;
-					}
-					String exprForCsv = predForCSV(pred);
-					exprLineList.add(exprForCsv);
-					
-					String exprLine = StringUtil.join(exprLineList, del) + "\n";
-					bs1.write(exprLine.getBytes());
-					
-					String predicateFeature = pred.genPartialProgramFeature();
-					for(int slopIndex = 0; slopIndex < pred.getSlopNum(); slopIndex++){
-						for(VariableInfo info: recurBoolNode.getCondVector().getLocals()){
-							String varFeaPrefix = info.genVarFeature();
-							List<String> varLineList = new ArrayList<>();
-							varLineList.add(contextFeature);
-							varLineList.add(recurNodeFeature);
-							varLineList.add(recurNodeY);
-							varLineList.add(varFeaPrefix);
-							varLineList.add(predicateFeature);
-							
-							String currStr = StringUtil.join(varLineList, del);
-							boolean argUsed = usedAsParam(pred.getOriLiteral(), info.getNameLiteral());
-							currStr = StringUtil.connect(currStr, "" + argUsed, del); //argused
-							
-							boolean typeFit = TypeUtil.isLegalVarAtPosition(pred.getLiteral(), slopIndex, info, allOriPredicates); 
-							currStr = StringUtil.connect(currStr, "" + typeFit, del); //tpfit
-							
-							int occuredTime = getVarOccurredTimeAtTheExprPosion(
-									info.getNameLiteral(), 
-									pred.getLiteral(), 
-									slopIndex, 
-									allOriPredicates);
-							currStr = StringUtil.connect(currStr, "" + occuredTime, del); //occuredTime
-							List<PositionFeature> positionFeatureList = info.getPositionFeatures();
-							if(positionFeatureList.size() > 0){
-								
-								for(int i = 0; i < positionFeatureList.size(); i++){//i'th occurrence of the var
-//									boolean used = (i > 0) ? true : false;
-									 String outputStr = StringUtil.connect(currStr, "" + slopIndex, del);//index
-
-									PositionFeature positionFeature = positionFeatureList.get(i);
-									if(positionFeature.getPosition() == slopIndex){
-										outputStr = StringUtil.connect(outputStr, "true", del);//putin
-									}else{
-										outputStr = StringUtil.connect(outputStr, "false", del);//putin
-									}
-									bs2.write((outputStr + "\n").getBytes());
-								}
-								
-							}else{
-								scanedVar++;
-								if(scanedVar % 4 == 0){
-									continue;
-								}
-								
-								String outputStr = StringUtil.connect(currStr, "" + slopIndex, del); //index
-								outputStr = StringUtil.connect(outputStr, "false", del);//putin
-								bs2.write((outputStr + "\n").getBytes());
-							}
-						}
-					}
-				}
-				
-				bs0.flush();
-				bs1.flush();
-				bs2.flush();
-			}
-			
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			FileUtil.closeInputStream(bs0, fos0);
+		for(Writer writer: list) {
+			writer.write();
 		}
-		CSVChecker.checkAllCSV(path);
-		CSVChecker.checkAllCSV(exprPath);
-		CSVChecker.checkAllCSV(varPath);
 	}
 	
-	private static void writeAllPred(String outFilePrefix){
-		String allPredPath = outFilePrefix + ".allpred.csv";
-		FileOutputStream fos = null;
-		BufferedOutputStream bs = null;
-		//allpred
-		try {
-			fos = new FileOutputStream(allPredPath, false);
-			bs = new BufferedOutputStream(fos);
 
-			String header = getAllPredHeader() + "\n";
-			bs.write(header.getBytes());
-			
-			for(CondVector vec: plainCondVec) {
-				
-				if(!CONFIG.isPredAll() && omit(vec)) {
-					continue;
-				}
-				
-				/*for all expr*/
-				Predicate pred = vec.getPredicate();
-				
-				if(!CONFIG.isPredAll() && pred.getSlopNum() == 0) {
-					continue;
-				}
-				
-				String exprForCsv = predForCSV(pred);
-				List<String> allPredList = new ArrayList<>();
-				allPredList.add("" + vec.getId());
-				allPredList.add(exprForCsv);
-				allPredList.add(""+ pred.getSlopNum());
-				allPredList.add(pred.getSlopTypes().toString());
-				allPredList.add(pred.getOriSlopVars().toString());
-				allPredList.add(pred.getOriLiteral());
-				
-				String allPredLine = StringUtil.join(allPredList, del) + "\n";
-				bs.write(allPredLine.getBytes());
-			}
-			
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			FileUtil.closeInputStream(bs, fos);
-		}
-		CSVChecker.checkAllCSV(allPredPath);
-	}
-	
-	private static void writeAllTree(String outFilePrefix) {
-		String path = outFilePrefix + ".full.csv";
-		FileOutputStream fos = null;
-		BufferedOutputStream bs = null;
-		try {
-			fos = new FileOutputStream(path, false);
-			bs = new BufferedOutputStream(fos);
-			bs.write("id	file	line	cond\n".getBytes()); // spilt by TAB
-			for(TreeVector treeVec : recurTreeList) {
-				String line = treeVec.getId() + "\t" + treeVec.getFileName() + "\t" + 
-						treeVec.getLine() + "\t" + 
-						treeVec.getExpr().toString().replaceAll("\n", " ") + "\n";
-				bs.write(line.getBytes());
-			}
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			FileUtil.closeInputStream(bs, fos);
-		}
-		CSVChecker.checkAllCSV(path);
-	}
-	
-	private static void writeButtomUpStep2(String outFilePrefix){
-		String varPath = outFilePrefix + ".var.csv";
-		FileOutputStream fos = null;
-		BufferedOutputStream bs = null;
-		try {
-			// step 0
-			fos = new FileOutputStream(varPath, false);
-			bs = new BufferedOutputStream(fos);
-
-			String header = getButtomUpStepTwoHeader() + "\n";
-			bs.write(header.getBytes());
-			
-			Map<String, OriPredItem> allOriPredicates = AbsInvoker.loadAllOriPredicate(outFilePrefix + ".allpred.csv");
-			
-			int scanedVar = 0;
-			for(int index = 0; index < plainCondVec.size(); index++){
-				CondVector vec = plainCondVec.get(index);
-				
-				if(duplicatedCondVec.contains(vec)) {
-					continue;
-				}
-				
-				if(omit(vec) || (missionType != PROCESSING_TYPE.D4J && index % 4 == 1)) {
-					continue;
-				}
-				
-				Predicate pred = vec.getPredicate();
-				
-				String contextFeature = vec.genContextFeatureStr();						
-				String predicateFeature = pred.genPartialProgramFeature();
-							
-				for(int slopIndex = 0; slopIndex < pred.getSlopNum(); slopIndex++){
-					for(VariableInfo info: vec.getLocals()){
-						
-						String varFeaPrefix = info.genVarFeature();
-						
-						List<String> varLineList = new ArrayList<>();
-						varLineList.add(contextFeature);
-						varLineList.add(varFeaPrefix);
-						varLineList.add(predicateFeature);
-						String currStr = StringUtil.join(varLineList, del);
-						
-						boolean argUsed = usedAsParam(pred.getOriLiteral(), info.getNameLiteral());
-						currStr = StringUtil.connect(currStr, "" + argUsed, del); //argused
-						
-						boolean typeFit = TypeUtil.isLegalVarAtPosition(pred.getLiteral(), slopIndex, info, allOriPredicates); 
-						currStr = StringUtil.connect(currStr, "" + typeFit, del); //tpfit
-						
-						int occuredTime = getVarOccurredTimeAtTheExprPosion(
-								info.getNameLiteral(), 
-								pred.getLiteral(), 
-								slopIndex, 
-								allOriPredicates);
-						
-						currStr = StringUtil.connect(currStr, "" + occuredTime, del); //occuredTime
-						
-						List<PositionFeature> positionFeatureList = info.getPositionFeatures();
-						
-						if(positionFeatureList.size() > 0){
-							
-							for(int i = 0; i < positionFeatureList.size(); i++){//i'th occurrence of the var
-								boolean used = (i > 0) ? true : false;
-								String outputStr = StringUtil.connect(currStr, "" + used, del);
-								outputStr = StringUtil.connect(outputStr, "" + slopIndex, del);//index
-
-								PositionFeature positionFeature = positionFeatureList.get(i);
-								if(positionFeature.getPosition() == slopIndex){
-									outputStr = StringUtil.connect(outputStr, "true", del);//putin
-								}else{
-									outputStr = StringUtil.connect(outputStr, "false", del);//putin
-								}
-								bs.write((outputStr + "\n").getBytes());
-							}
-							
-						}else{
-							if(SKIP) {
-								scanedVar++;
-								if(scanedVar % SKIP_STEP == 0){
-									continue;
-								}
-							}
-							
-							String outputStr = StringUtil.connect(currStr, "false", del); //used
-							outputStr = StringUtil.connect(outputStr, "" + slopIndex, del); //index
-							outputStr = StringUtil.connect(outputStr, "false", del);//putin
-							bs.write((outputStr + "\n").getBytes());
-						}
-					}//for(VariableInfo info: vec.getLocals())
-				
-				}//for(int slopIndex = 0; slopIndex < pred.getSlopNum(); slopIndex++)
-			}//for(int index = 0; index < condVectorVectorList.size(); index++)
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			FileUtil.closeInputStream(bs, fos);
-		}
-		CSVChecker.checkAllCSV(varPath);
-	}
-	
 	public static boolean usedAsParam(String condition, String varName) {
 		
 		Expression expr = (Expression) JavaFile.genASTFromSource(condition, ASTParser.K_EXPRESSION, DeduMain.JAVA_VERSION);
@@ -507,260 +173,6 @@ public final class DeduConditionVisitor extends AbstractDeduVisitor{
 		
 		return false;
 	}
-
-	private static void writeButtomUpStep0AndStep1(String outFilePrefix){
-		String varZeroPath = outFilePrefix + ".v0.csv";
-		String exprPath = outFilePrefix + ".expr.csv";
-		
-		FileOutputStream fos0 = null;
-		BufferedOutputStream bs0 = null;
-		
-		FileOutputStream fos1 = null;
-		BufferedOutputStream bs1 = null;
-		
-		Map<String, OriPredItem> allOriPredicates = AbsInvoker.loadAllOriPredicate(outFilePrefix + ".allpred.csv");
-
-		Map<String, Integer> pos0TimeMap = AbsInvoker.getPos0TimeMap(allOriPredicates);
-		
-		try {
-			//step 0
-			fos0 = new FileOutputStream(varZeroPath, false);
-			bs0 = new BufferedOutputStream(fos0);
-			
-			//step 1
-			fos1 = new FileOutputStream(exprPath, false);
-			bs1 = new BufferedOutputStream(fos1);
-						
-			//header v0
-			String header0 = getButtomUpStepZeroHeader() + "\n";
-			bs0.write(header0.getBytes());
-			
-			//header expr
-			String header1 = getButtomUpStepOneHeader() + "\n";
-			bs1.write(header1.getBytes());
-			
-			int scanedVar = 0;
-			for(int index = 0; index < plainCondVec.size(); index++){
-				CondVector vec = plainCondVec.get(index);
-				
-				if(duplicatedCondVec.contains(vec)) {
-					continue;
-				}
-				
-				if(omit(vec)) {
-					continue;
-				}
-				
-				Predicate pred = vec.getPredicate();
-				
-				String contextFeature = vec.genContextFeatureStr();
-				
-				for(VariableInfo info: vec.getLocals()){
-					
-					String varFeaPrefix = info.genVarFeature();
-					
-					List<String> varZeroLineList = new ArrayList<>();
-					varZeroLineList.add(contextFeature);
-					varZeroLineList.add(varFeaPrefix);
-					
-					int posZeroTime = pos0TimeMap.containsKey(info.getNameLiteral()) ? pos0TimeMap.get(info.getNameLiteral()) : 0;
-					varZeroLineList.add("" + posZeroTime);//occurred at pos0's time
-
-					
-					List<PositionFeature> ppfList = info.getPositionFeatures();
-					if(ppfList.size() > 0){
-						
-						
-						for(int i = 0; i < ppfList.size(); i++){//i'th occurrence of the var
-							
-							boolean used = (i > 0) ? true : false;
-							if(used){
-								break;
-							}
-							
-							PositionFeature ppf = ppfList.get(i);
-							
-							if(ppf.getPosition() == 0){//appeared at position zero
-								/*for var zero*/
-								varZeroLineList.add("true");  //putin
-								
-								/*for expr*/
-								//int occuredTime = getVarOccurredTimeAtTheExprPosion(info.getNameLiteral(), pred.getLiteral(), 0, allOriPredicates);
-								
-								List<String> exprLineList = new ArrayList<>();
-								exprLineList.add(contextFeature);
-								exprLineList.add(varFeaPrefix);
-								exprLineList.add("" + posZeroTime);//occpostime
-								
-								String exprForCsv = predForCSV(pred);
-								exprLineList.add(exprForCsv);
-								String exprLine = StringUtil.join(exprLineList, del) + "\n";
-								bs1.write(exprLine.getBytes());
-								
-							}else{
-								varZeroLineList.add("false"); //putin
-							}
-							
-						}
-						
-					}else{
-						varZeroLineList.add("false"); //putin
-						
-						if(SKIP) {
-							scanedVar++;
-							if(scanedVar % SKIP_STEP == 0){
-								continue;
-							}
-						}
-					}
-					
-					String varZeroLine = StringUtil.join(varZeroLineList, del) + "\n";
-					bs0.write(varZeroLine.getBytes());
-					
-				}//end for(VariableInfo info: vec.getLocals())
-			}
-			
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			FileUtil.closeInputStream(bs0, bs1, fos0, fos1);
-		}
-		CSVChecker.checkAllCSV(varZeroPath, exprPath);
-	}
-	
-	
-	private static void writeTopDown(String outFilePrefix){
-		String exprPath = outFilePrefix + ".topdown.expr.csv";
-		String varPath = outFilePrefix + ".topdown.var.csv";
-
-		FileOutputStream fos0 = null;
-		BufferedOutputStream bs0 = null;
-		
-		FileOutputStream fos1 = null;
-		BufferedOutputStream bs1 = null;
-		
-		Map<String, OriPredItem> allOriPredicates = AbsInvoker.loadAllOriPredicate(outFilePrefix + ".allpred.csv");
-
-		
-		try {
-			//step 0
-			fos0 = new FileOutputStream(exprPath, false);
-			bs0 = new BufferedOutputStream(fos0);
-			
-			//step 1
-			fos1 = new FileOutputStream(varPath, false);
-			bs1 = new BufferedOutputStream(fos1);
-						
-			//header expr
-			String header0 = getTopDownStepZeroHeader() + "\n";
-			bs0.write(header0.getBytes());
-			
-			//header all var
-			String header1 = getTopDownStepOneHeader() + "\n";
-			bs1.write(header1.getBytes());
-			
-			int scanedVar = 0;
-			for(int index = 0; index < plainCondVec.size(); index++){
-				CondVector vec = plainCondVec.get(index);
-				
-				if(duplicatedCondVec.contains(vec)) {
-					continue;
-				}
-				
-				if(omit(vec)) {
-					continue;
-				}
-				
-				Predicate pred = vec.getPredicate();
-				
-				if(pred.getSlopNum() == 0) {
-					continue;
-				}
-								
-				String contextFeature = vec.genContextFeatureStr();
-				
-				String exprForCsv = predForCSV(pred);
-				
-				String exprLine = StringUtil.connect(contextFeature, exprForCsv, del);
-				exprLine += "\n";
-				bs0.write(exprLine.getBytes());
-				
-				String predicateFeature = pred.genPartialProgramFeature();
-				
-				for(int slopIndex = 0; slopIndex < pred.getSlopNum(); slopIndex++){
-					for(VariableInfo info: vec.getLocals()){
-						
-						String varFeaPrefix = info.genVarFeature();
-						
-						List<String> varLineList = new ArrayList<>();
-						varLineList.add(contextFeature);
-						varLineList.add(varFeaPrefix);
-						varLineList.add(predicateFeature);
-						String currStr = StringUtil.join(varLineList, del);
-						
-						boolean argUsed = usedAsParam(pred.getOriLiteral(), info.getNameLiteral());
-						currStr = StringUtil.connect(currStr, "" + argUsed, del); //argused
-						
-						boolean typeFit = TypeUtil.isLegalVarAtPosition(pred.getLiteral(), slopIndex, info, allOriPredicates); 
-						currStr = StringUtil.connect(currStr, "" + typeFit, del); //tpfit
-						
-						int occuredTime = getVarOccurredTimeAtTheExprPosion(
-								info.getNameLiteral(), 
-								pred.getLiteral(), 
-								slopIndex, 
-								allOriPredicates);
-						
-						currStr = StringUtil.connect(currStr, "" + occuredTime, del); //occuredTime
-						
-						List<PositionFeature> positionFeatureList = info.getPositionFeatures();
-						
-						if(positionFeatureList.size() > 0){
-							
-							for(int i = 0; i < positionFeatureList.size(); i++){//i'th occurrence of the var
-//								boolean used = (i > 0) ? true : false;
-								 String outputStr = StringUtil.connect(currStr, "" + slopIndex, del);//index
-
-								PositionFeature positionFeature = positionFeatureList.get(i);
-								if(positionFeature.getPosition() == slopIndex){
-									outputStr = StringUtil.connect(outputStr, "true", del);//putin
-								}else{
-									outputStr = StringUtil.connect(outputStr, "false", del);//putin
-								}
-								bs1.write((outputStr + "\n").getBytes());
-							}
-							
-						}else{
-							if(SKIP) {
-								scanedVar++;
-								if(scanedVar % SKIP_STEP == 0){
-									continue;
-								}
-							}
-							
-							String outputStr = StringUtil.connect(currStr, "" + slopIndex, del); //index
-							outputStr = StringUtil.connect(outputStr, "false", del);//putin
-							bs1.write((outputStr + "\n").getBytes());
-						}
-					}//for(VariableInfo info: vec.getLocals())
-				
-				}//for(int slopIndex = 0; slopIndex < pred.getSlopNum(); slopIndex++)
-				
-				bs0.flush();
-				bs1.flush();
-			}//for(int index = 0; index < condVectorVectorList.size(); index++)
-				
-			
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			FileUtil.closeInputStream(bs0, bs1, fos0, fos1);
-		}
-		CSVChecker.checkAllCSV(varPath, exprPath);
-	}	
 	
 	public static int getVarOccurredTimeAtTheExprPosion(String varname, String pred, int pos, Map<String, OriPredItem> allOriPredicates) {
 		pred = pred.replaceAll("\\s", "");
@@ -782,15 +194,6 @@ public final class DeduConditionVisitor extends AbstractDeduVisitor{
 		return timeMap.containsKey(varname) ? timeMap.get(varname) : 0;
 	}
 
-	
-	private static String predForCSV(Predicate pred){
-		String expr = pred.getLiteral();
-		String rightExpr = expr.replace('\n', ' ');
-		Matcher matcher = pattern.matcher(rightExpr);
-		String exprForCsv = matcher.replaceAll(" ");
-//		exprForCsv = ExprNormalization.normalize(exprForCsv, info.getType());
-		return exprForCsv;
-	}
 	
 	private CondVector getCondVector(int id, Statement node, Expression expr, int ln, int col, ContextFeature context,
 			ClassRepre clsRepre) {
@@ -825,252 +228,6 @@ public final class DeduConditionVisitor extends AbstractDeduVisitor{
 
 		return condVector;
 	}
-	
-	private static boolean usedProjectLimitedName(Expression expr) {
-		
-		class QNameVIsitor extends ASTVisitor{
-			boolean used = false;
-			@Override
-			public boolean visit(InfixExpression node) {
-				Expression right = node.getRightOperand();
-				if(right instanceof SimpleName) {
-					if(ASTLocator.maybeConstant(right.toString())) {
-						used = true;
-					}
-				}
-				return super.visit(node);
-			}
-
-			@Override
-			public boolean visit(QualifiedName node) {
-				//only process the foremost qualifier
-				if(node.getQualifier() instanceof QualifiedName) {
-					return false;
-				}
-				String qua = node.getQualifier().toString();
-				if(!TypeUtil.isJavaLangOrJavaUtilType(qua)) {
-					used = true;
-				}
-				return super.visit(node);
-			}
-			
-			@Override
-			public boolean visit(MethodInvocation node) {
-				Expression expr = node.getExpression();
-				if(expr == null) {
-					used = true;
-					return super.visit(node);
-				}
-				
-				if(expr instanceof SimpleName == false) {
-					used = true;
-					return super.visit(node);
-				}
-				String caller = expr.toString();
-				if(ASTLocator.maybeConstant(caller)) {
-					used = true;
-				}else if(Character.isUpperCase(caller.charAt(0)) && !TypeUtil.isJavaLangOrJavaUtilType(caller)) {
-					used = true;
-				}
-				
-				return super.visit(node);
-			}
-			
-		};
-		
-		QNameVIsitor visitor = new QNameVIsitor();
-		expr.accept(visitor);
-		return visitor.used;
-	}
-	
-	private static Set<String> nonD4jOmitLiteral = new HashSet<>();
-	static {
-		nonD4jOmitLiteral.add("$");
-		nonD4jOmitLiteral.add("!$");
-		nonD4jOmitLiteral.add("$ == null");
-		nonD4jOmitLiteral.add("$ != null");
-		nonD4jOmitLiteral.add("$ && !$");
-		nonD4jOmitLiteral.add("$ && $");
-		nonD4jOmitLiteral.add("$ || !$");
-		nonD4jOmitLiteral.add("$ || $");
-	}
-	
-	private static boolean omit(TreeVector vec) {
-		//OMIT
-		if(vec.getContextFeature().getFileName().contains("Test")){
-			return true;
-		}
-		
-		//just for pred all experiment
-		if(PredAllExperiment.condIdTestSet != null && PredAllExperiment.condIdTestSet.contains(vec.getId())) {
-			return true;
-		}
-		return false;
-	}
-	
-	/**
-	 * @param vec
-	 * @return <code>true</code> if this vector needs to be removed
-	 */
-	private static boolean omit(CondVector vec) {
-		//OMIT
-		if(OMITTING_TEST && vec.getContextFeature().getFileName().contains("Test")){
-			return true;
-		}
-		
-		Predicate pred = vec.getPredicate();
-		String literal = pred.getLiteral();
-
-		if(missionType == PROCESSING_TYPE.D4J) {
-			if(pred.getSlopNum() > UPPER_POS_BOUND){
-				return true;
-			}
-		}else {
-			if(pred.getSlopNum() > UPPER_POS_BOUND && !(literal.contains(" || ") || literal.contains(" && "))){
-				return true;
-			}
-			
-			if(pred.getSlopTypes().contains(PositionFeatureVisitor.UNKNOWN_TYPE)) {
-				return true;
-			}
-		}
-		
-		if(literal.contains(" 0x") || literal.contains(" 0X")) {
-			return true;
-		}
-		
-		if(literal.contains("++") || literal.contains("--") || literal.contains(">>>")) {
-			return true;
-		}
-		
-		if(literal.contains("+=") || literal.contains("-=") || literal.contains("*=") || literal.contains("/=") || literal.contains(" % ")) {
-			return true;
-		}
-		
-		if(literal.contains("super.")) {
-			return true;
-		}
-		
-		Expression expr = (Expression) JavaFile.genASTFromSource(pred.getOriLiteral(), ASTParser.K_EXPRESSION, DeduMain.JAVA_VERSION);
-		if(expr instanceof MethodInvocation) {
-			MethodInvocation mi = (MethodInvocation) expr;
-			if(mi.getExpression() != null && mi.getExpression() instanceof StringLiteral) {
-				return true;
-			}
-		}else if(expr instanceof InfixExpression){
-			InfixExpression infix = (InfixExpression) expr;
-			if(infix.getLeftOperand() instanceof NumberLiteral) {
-				return true;
-			}
-			if(infix.getLeftOperand() instanceof MethodInvocation) {
-				MethodInvocation mi = (MethodInvocation) infix.getLeftOperand() ;
-				if(mi.getExpression() instanceof QualifiedName || mi.getExpression() instanceof StringLiteral) {
-					return true;
-				}
-			}
-			
-			if(ASTLocator.maybeConstant(infix.getLeftOperand().toString())) {
-				return true;
-			}
-			
-			if(ASTLocator.maybeConstant(infix.getRightOperand().toString()) && infix.getRightOperand() instanceof SimpleName) {
-				return true;
-			}
-		}
-		
-		//if is processing other projects, remove project-related predicates, only reserve primitive types and java lang types 
-		if(missionType == PROCESSING_TYPE.GIT_REPOS) {
-			
-			if(literal.endsWith(".class") || literal.startsWith("this.")) {
-				return true;
-			}
-			
-			if(nonD4jOmitLiteral.contains(literal)) {
-				return true;
-			}
-			
-			if(literal.contains("System.getProperty")) {
-				return true;
-			}
-			
-			if(literal.contains("$.equals(")) {
-				return true;
-			}
-			
-			if(literal.contains("\\u") || literal.contains("0X") || literal.contains("0x") || literal.contains("'")) {
-				return true;
-			}
-			
-			if(literal.contains("?") && literal.contains(":")) {
-				return true;
-			}
-			
-			if(literal.contains("[") && literal.contains("]")) {
-				return true;
-			}
-			
-			//in case of instanceof predicates
-			String inst = "$ instanceof ";
-			if(literal.contains(inst)) {
-				
-				if(pred.getSlopNum() != 1) {
-					return true;
-				}
-				
-				String insttype = literal.substring(inst.length()).trim();
-				if(!TypeUtil.isJavaLangOrJavaUtilType(insttype)) {
-					return true;
-				}
-				
-			}
-				
-			boolean nonVar = true;
-			//check the used vars are simple type
-			for(VariableInfo info: vec.getLocals()){
-				//only process vars in the predicate
-				if(info.getPositionFeatures().size() == 0) {
-					continue;
-				}
-				
-				nonVar = false;
-				String type = TypeUtil.removeGenericType(info.getType());
-				if("boolean".equals(type) || "Boolean".equals(type) || "Class".equals(type) || "Throwable".equals(type)
-						|| "Enum".equals(type) || "Object".equals(type) || "ClassLoader".equals(type)) {
-					return true;
-				}
-				
-				if(!(TypeUtil.isPrimitiveType(info.getType()) || TypeUtil.isJavaLangOrJavaUtilType(type))){
-					return true;
-				}
-			}
-			
-			if(nonVar) {
-				return true;
-			}
-			
-			for(String var: pred.getOriSlopVars()) {
-				if(var.equals("this")) {
-					return true;
-				}
-			}
-			
-			//check form
-			if(usedProjectLimitedName(expr)) {
-				return true;
-			}
-			
-		}
-		
-		//just for pred all experiment
-		if(CONFIG.isPredAllPreparing()) {
-			if(PredAllExperiment.condIdTestSet != null && PredAllExperiment.condIdTestSet.contains(vec.getId())) {
-				return true;
-			}
-		}
-		
-		return false;
-	}
-	
 	
 	private Expression getCondExpr(ASTNode node){
 		Expression conditionExpr = null;
@@ -1439,6 +596,7 @@ public final class DeduConditionVisitor extends AbstractDeduVisitor{
 	
 	
 	private void collectCondtionForPredAll(IfStatement node) {
+		
 		Expression conditionExpr = node.getExpression();
 		
 		if(conditionExpr instanceof ConditionalExpression) {
@@ -1449,6 +607,7 @@ public final class DeduConditionVisitor extends AbstractDeduVisitor{
 		if(condStr.contains(" | ") || condStr.contains(" & ") || condStr.contains(">>") || condStr.contains("<<")) {
 			return;
 		}
+				
 		class IllegalInvoker extends ASTVisitor{
 			boolean illegal = false;
 			@Override
@@ -1537,10 +696,10 @@ public final class DeduConditionVisitor extends AbstractDeduVisitor{
 		
 		RecurTree tree = recurGrammar.generateTree(conditionExpr);
 		
+		// Note that the allLocals has no position features
 		List<VariableInfo> allLocals = getAllVarInfo(node, clsRepre, conditionExpr).getFirst();
 		
-		TreeVector treeVec = new TreeVector(TREE_ID, ln, col, context, 
-											conditionExpr, tree, allLocals);
+		TreeVector treeVec = new TreeVector(TREE_ID, ln, col, context, conditionExpr, tree, allLocals);
 		
 		List<RecurBoolNode> bfsList = tree.broadFristSearchTraverse();
 		
@@ -1558,7 +717,7 @@ public final class DeduConditionVisitor extends AbstractDeduVisitor{
 		recurTreeList.add(treeVec);
 	}
 	
-/******************************************************************/
+	/******************************************************************/
 	
 	@Override
 	public boolean visit(AssertStatement node) {
@@ -1653,7 +812,7 @@ public final class DeduConditionVisitor extends AbstractDeduVisitor{
 		public int len = -1;
 		
 		//record the variable type of the position
-		private String varType = PositionFeatureVisitor.UNKNOWN_TYPE;
+		private String varType = UNKNOWN_TYPE;
 		
 		//only for initiall value
 		private String repalcedStr; 
@@ -1710,8 +869,6 @@ public final class DeduConditionVisitor extends AbstractDeduVisitor{
 	/*******************************************************************************/
 	
 	private class PositionFeatureVisitor extends ASTVisitor{
-		
-		public static final String UNKNOWN_TYPE = "UNKOWN";
 		
 		private PredicateFeature predicateFeature;
 		

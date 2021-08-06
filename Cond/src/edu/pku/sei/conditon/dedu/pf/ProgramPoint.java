@@ -90,6 +90,11 @@ public class ProgramPoint implements Comparable<ProgramPoint>{
 		StringBuffer sb = new StringBuffer();
 		sb.append("ProgramPoint@" + this.hashCode() + "\n");
 		if(astRoot != null) {
+			if(astRoot.isTau()) {
+				sb.append("TREE IS TAU.\n");
+			} else {
+				sb.append("TREE IS NOT TAU.\n");
+			}
 			sb.append("TREE ITEM:\n");
 			sb.append(astRoot.toString());
 		}

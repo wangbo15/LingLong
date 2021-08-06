@@ -10,6 +10,8 @@ import java.util.Stack;
 import java.util.TreeSet;
 
 import edu.pku.sei.conditon.auxiliary.DollarilizeVisitor;
+import edu.pku.sei.conditon.dedu.DeduFeatureGenerator;
+import edu.pku.sei.conditon.dedu.extern.AbsInvoker;
 import edu.pku.sei.conditon.dedu.extern.Predictor;
 import edu.pku.sei.conditon.dedu.pf.Path;
 import edu.pku.sei.conditon.dedu.pf.ProgramPoint;
@@ -79,8 +81,12 @@ public abstract class PathFinder extends Predictor{
 		this.searchStrategy = searchStrategy;
 		
 		this.srcFile = new File(srcRoot + "/" + filePath);
+		assert srcFile.exists(): "SRC FILE DOSE NOT EXIST!";
+		
 		this.srcCode = FileUtil.readFileToString(srcFile);
 		this.srcCodeLines = srcCode.split("\n");
+		
+		assert srcCodeLines.length > line - 1: "EMPTY SRC FILE";
 		this.targetLine = srcCodeLines[line - 1].trim();
 		
 		String targetRoot = "";
@@ -112,7 +118,7 @@ public abstract class PathFinder extends Predictor{
 		
 		assert root != "";
 		this.rootFile = new File(root);
-		assert rootFile.exists();
+		assert rootFile.exists(): "ROOT FILE DOES NOT EXIST!";
 		assert targetRoot != "";
 		
 		String clsName = filePath.substring(0, filePath.length() - 5);
@@ -148,7 +154,31 @@ public abstract class PathFinder extends Predictor{
 		return initTime;
 	}
 
-	abstract public void entry() throws PathFindingException;
+	public void entry() throws PathFindingException{
+		// prepare
+		invoker.prepare();
+		
+		DeduFeatureGenerator.getHitNode(projAndBug, model, srcRoot, testRoot, filePath, line);
+		Map<String, VariableInfo> allVarInfoMap = DeduFeatureGenerator.getAllVariablesMap();
+		Map<String, String> varToVarFeaMap = DeduFeatureGenerator.getVarToVarFeatureMap(projAndBug, model, srcRoot, testRoot, filePath, line);
+		
+		if(!varToVarFeaMap.isEmpty()) {
+			String ctxFea = DeduFeatureGenerator.generateContextFeature(projAndBug, model, srcRoot, testRoot, filePath, line);
+			
+			// make start
+			ProgramPoint start = makeStart();
+			
+			TreeSet<Path> results = getResults(start, ctxFea, varToVarFeaMap, allVarInfoMap);
+	
+			List<String> lines = Path.getResultLines(results);
+	
+			String proj_Bug_ithSusp = projAndBug + "_" + sid;
+			AbsInvoker.dumpPlainResult(proj, proj_Bug_ithSusp, lines);
+		}
+		invoker.finish();
+	}
+	
+	abstract protected ProgramPoint makeStart();
 	
 	abstract protected TreeSet<ProgramPoint> expand(ProgramPoint start, String ctxFea, 
 			Map<String, String> varToVarFeaMap, Map<String, VariableInfo> allVarInfoMap);
@@ -156,6 +186,10 @@ public abstract class PathFinder extends Predictor{
 	protected TreeSet<Path> getResults(ProgramPoint start, String ctxFea, 
 			Map<String, String> varToVarFeaMap, 
 			Map<String, VariableInfo> allVarInfoMap){
+		
+		if (allVarInfoMap.isEmpty()) {
+			return CollectionUtil.emptyTreeSet();
+		}
 		
 		List<Long> timeResults = new ArrayList<>(searchStrategy.getResultLimits());
 		
@@ -180,7 +214,13 @@ public abstract class PathFinder extends Predictor{
 							results.add(p);
 						}
 					} else {
-						results.add(p);
+						if(CONFIG.isBottomUp() && CONFIG.isRecur()) {
+							if(p.getLast().getAstRoot().isTau()) {
+								results.add(p);
+							}
+						} else {
+							results.add(p);
+						}
 					}
 					
 				}

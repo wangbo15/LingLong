@@ -8,7 +8,7 @@ import java.util.Queue;
 public class ContextFeature extends Feature {
 
 	private static final long serialVersionUID = -6438020769164049519L;
-	
+
 	private File file;
 	private String fileName;
 	private String tdName;
@@ -16,26 +16,26 @@ public class ContextFeature extends Feature {
 	private String mtdName;
 	private int mtdModifier = -1;
 	private int mtdLineNum = 0;
-	
-//	private List<VariableInfo> allVariables;
-	
+
+	// private List<VariableInfo> allVariables;
+
 	private boolean inLoop;
 	private String bodyCtl;
-	
+
 	public static final int BEFORE_SYNTACTIC_NUM = 6;
 	public static final int BODY_SYNTACTIC_NUM = 4;
 	public static final int AFTER_SYNTACTIC_NUM = 4;
 
 	public static final int NEAREST_LOCAL_NUM = 4;
-	
+
 	private Queue<String> beforeSyntacticQueue;
 	private List<String> befSynList;
 	private String allBefStr;
-	
+
 	private Queue<String> bodySyntacticQueue;
 	private List<String> bdSynList;
 	private String allBdStr;
-	
+
 	private Queue<String> afterSyntacticQueue;
 	private List<String> afSynList;
 	private String allAfStr;
@@ -48,8 +48,7 @@ public class ContextFeature extends Feature {
 
 	private String previousCond = NONE;
 	private String previousPred = NONE;
-	
-	
+
 	public ContextFeature(File file, String tdName, String mtdName, int mtdModifier, int mtdLineNum, boolean inLoop) {
 		this.file = file;
 		this.fileName = file.getName();
@@ -63,7 +62,7 @@ public class ContextFeature extends Feature {
 	public File getFile() {
 		return file;
 	}
-	
+
 	public String getFileName() {
 		return fileName;
 	}
@@ -79,14 +78,14 @@ public class ContextFeature extends Feature {
 	public int getMtdModifier() {
 		return mtdModifier;
 	}
-	
+
 	public int getMtdLineNum() {
 		return mtdLineNum;
 	}
 
-//	public List<VariableInfo> getAllVariables() {
-//		return allVariables;
-//	}
+	// public List<VariableInfo> getAllVariables() {
+	// return allVariables;
+	// }
 
 	public boolean isInLoop() {
 		return inLoop;
@@ -101,14 +100,14 @@ public class ContextFeature extends Feature {
 	}
 
 	public List<String> getBefSynList() {
-		if(befSynList != null){
+		if (befSynList != null) {
 			return befSynList;
 		}
 		befSynList = new ArrayList<String>(BEFORE_SYNTACTIC_NUM);
-		for(int i = 0; i < BEFORE_SYNTACTIC_NUM; i++){
-			if(! beforeSyntacticQueue.isEmpty()){
+		for (int i = 0; i < BEFORE_SYNTACTIC_NUM; i++) {
+			if (!beforeSyntacticQueue.isEmpty()) {
 				befSynList.add(beforeSyntacticQueue.poll());
-			}else{
+			} else {
 				befSynList.add(NONE);
 			}
 		}
@@ -118,14 +117,14 @@ public class ContextFeature extends Feature {
 	}
 
 	public List<String> getBdSynList() {
-		if(bdSynList != null){
+		if (bdSynList != null) {
 			return bdSynList;
 		}
 		bdSynList = new ArrayList<String>(BODY_SYNTACTIC_NUM);
-		for(int i = 0; i < BODY_SYNTACTIC_NUM; i++){
-			if(! bodySyntacticQueue.isEmpty()){
+		for (int i = 0; i < BODY_SYNTACTIC_NUM; i++) {
+			if (!bodySyntacticQueue.isEmpty()) {
 				bdSynList.add(bodySyntacticQueue.poll());
-			}else{
+			} else {
 				bdSynList.add(NONE);
 			}
 		}
@@ -135,14 +134,14 @@ public class ContextFeature extends Feature {
 	}
 
 	public List<String> getAfSynList() {
-		if(afSynList != null){
+		if (afSynList != null) {
 			return afSynList;
 		}
 		afSynList = new ArrayList<String>(AFTER_SYNTACTIC_NUM);
-		for(int i = 0; i < AFTER_SYNTACTIC_NUM; i++){
-			if(! afterSyntacticQueue.isEmpty()){
+		for (int i = 0; i < AFTER_SYNTACTIC_NUM; i++) {
+			if (!afterSyntacticQueue.isEmpty()) {
 				afSynList.add(afterSyntacticQueue.poll());
-			}else{
+			} else {
 				afSynList.add(NONE);
 			}
 		}
@@ -161,12 +160,11 @@ public class ContextFeature extends Feature {
 		this.bodySyntacticQueue = bodySyntacticQueue;
 	}
 
-
 	public void setAfterSyntacticQueue(Queue<String> afterSyntacticQueue) {
 		this.allAfStr = afterSyntacticQueue.toString();
 		this.afterSyntacticQueue = afterSyntacticQueue;
 	}
-	
+
 	public String getAllBefStr() {
 		return allBefStr;
 	}
@@ -194,7 +192,7 @@ public class ContextFeature extends Feature {
 	public void setNextStmt0(String nextStmt0) {
 		this.nextStmt0 = nextStmt0;
 	}
-	
+
 	public String getPreviousStmt1() {
 		return previousStmt1;
 	}
@@ -218,7 +216,7 @@ public class ContextFeature extends Feature {
 	public void setPreviousCond(String previousCond) {
 		this.previousCond = previousCond;
 	}
-	
+
 	public String getPreviousPred() {
 		return previousPred;
 	}
@@ -227,8 +225,14 @@ public class ContextFeature extends Feature {
 		this.previousPred = previousPred;
 	}
 
+	private static String cache = null;
+
 	public static String getFeatureHeader() {
-		return Feature.genFeatureHeaderFromList("context");
+		if (cache != null) {
+			return cache;
+		}
+		cache = Feature.genFeatureHeaderFromList("context");
+		return cache;
 	}
-	
+
 }

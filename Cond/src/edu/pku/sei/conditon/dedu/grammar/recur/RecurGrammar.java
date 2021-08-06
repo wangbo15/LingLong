@@ -19,6 +19,7 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SuperFieldAccess;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 
+import edu.pku.sei.conditon.auxiliary.ASTLocator;
 import edu.pku.sei.conditon.dedu.grammar.CondGrammar;
 import edu.pku.sei.conditon.dedu.grammar.Tree;
 import edu.pku.sei.conditon.dedu.grammar.recur.RecurBoolNode.Location;
@@ -26,8 +27,7 @@ import edu.pku.sei.conditon.dedu.grammar.recur.RecurBoolNode.Opcode;
 import edu.pku.sei.conditon.util.OperatorUtil;
 
 /**
- * A 2-level plain grammar
- * COND -> PRED(V1, V2...Vn)
+ * The Recursive Grammar
  */
 public class RecurGrammar extends CondGrammar<RecurTree>{
 	
@@ -97,8 +97,18 @@ public class RecurGrammar extends CondGrammar<RecurTree>{
 			
 		}
 		
+		private boolean includedByParenthesizedExp(RecurBoolNode parentRecurBoolNode, Expression node) {
+			Expression parentExp = parentRecurBoolNode.getExpr();
+			if(parentExp instanceof ParenthesizedExpression) {
+				if (((ParenthesizedExpression) parentExp).getExpression() == node) {
+					return true;
+				}
+			}
+			return false;
+		}
+		
 		private RecurBoolNode processInnerNode(Expression node, String op) {
-			RecurBoolNode recurNode; 
+			RecurBoolNode recurNode;
 			if(node == root) {
 				recurNode = new RecurBoolNode(null, op, node);
 				recurNode.setLocation(Location.DIRECT);
@@ -128,8 +138,15 @@ public class RecurGrammar extends CondGrammar<RecurTree>{
 				return;
 			}
 			
+			// handle braces
 			boolean isChildNode = false;
 			ASTNode parent = node.getParent();
+			if(parent instanceof ParenthesizedExpression) {
+				while(parent instanceof ParenthesizedExpression) {
+					parent = (Expression) parent.getParent();
+					node = (Expression) node.getParent();
+				}
+			}
 			
 			if(parent instanceof InfixExpression) {
 				InfixExpression infix = (InfixExpression) parent;
@@ -140,7 +157,7 @@ public class RecurGrammar extends CondGrammar<RecurTree>{
 					}
 				}
 				
-			}else if(node.getParent() instanceof PrefixExpression) {
+			} else if(node.getParent() instanceof PrefixExpression) {
 				PrefixExpression prefix = (PrefixExpression) parent;
 				if(OperatorUtil.isBoolOp(prefix.getOperator().toString())) {
 					isChildNode = true;
@@ -148,8 +165,10 @@ public class RecurGrammar extends CondGrammar<RecurTree>{
 			}
 			
 			if(isChildNode && isChild(node)) {
-				RecurBoolNode parentRecurBoolNode = getDirectParentRecurNode(node);
+				// TODO: remove brace?
+				node = ASTLocator.removeBraces(node);
 				
+				RecurBoolNode parentRecurBoolNode = getDirectParentRecurNode(node);
 				assert parentRecurBoolNode != null;
 				RecurBoolNode recurNode = new RecurBoolNode(parentRecurBoolNode, Opcode.NONE.toString(), node);
 				
@@ -159,9 +178,8 @@ public class RecurGrammar extends CondGrammar<RecurTree>{
 				grammarNodeToExpr.put(recurNode, node);
 			}
 			
-			
-			
 		}
+		
 		
 		@Override
 		public boolean visit(ArrayAccess node) {
@@ -195,8 +213,13 @@ public class RecurGrammar extends CondGrammar<RecurTree>{
 			processInnerNode(node, op);
 			
 			if(!child) {
-				node.getLeftOperand().accept(this);
-				node.getRightOperand().accept(this);
+				Expression left = node.getLeftOperand();
+				left = ASTLocator.removeBraces(left);
+				left.accept(this);
+				
+				Expression right = node.getRightOperand();
+				right = ASTLocator.removeBraces(right);
+				right.accept(this);
 			}
 			
 			return false;
@@ -216,6 +239,7 @@ public class RecurGrammar extends CondGrammar<RecurTree>{
 			RecurBoolNode recurNode = processInnerNode(node, op);
 			
 			Expression operand = node.getOperand();
+			operand = ASTLocator.removeBraces(operand);
 			if(isChild(operand)) {
 				RecurBoolNode operNode = new RecurBoolNode(recurNode, Opcode.NONE.toString(), operand);
 				biLinkParent(node, recurNode, operNode);
@@ -240,8 +264,10 @@ public class RecurGrammar extends CondGrammar<RecurTree>{
 
 		@Override
 		public boolean visit(ParenthesizedExpression node) {
-			processSpecialRoot(node);
 			if(node == root) {
+				Expression expr = ASTLocator.removeBraces(node);
+				this.root = expr;
+				expr.accept(this);
 				return false;
 			}
 			return super.visit(node);
@@ -353,7 +379,7 @@ public class RecurGrammar extends CondGrammar<RecurTree>{
 					}
 					return super.visit(node);
 				}
-				
+
 				
 			};
 			

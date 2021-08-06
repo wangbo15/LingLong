@@ -8,7 +8,6 @@ import java.util.Map.Entry;
 
 import edu.pku.sei.conditon.dedu.AbstractDeduVisitor;
 import edu.pku.sei.conditon.dedu.DeduConditionVisitor;
-import edu.pku.sei.conditon.dedu.DeduMain;
 import edu.pku.sei.conditon.dedu.pred.ExprPredItem;
 import edu.pku.sei.conditon.dedu.pred.OriPredItem;
 import edu.pku.sei.conditon.dedu.pred.VarPredItem;
@@ -110,6 +109,39 @@ public class Predictor {
 			varLineList.add("?"); //putin
 			String currStr = StringUtil.join(varLineList, del);
 			
+			varFeatersAtN.add(currStr);
+		}
+		return varFeatersAtN;
+	}
+	
+	protected List<String> genRCBUV1FeatureAtPosN(Map<String, String> varToVarFeaMap, Map<String, VariableInfo> allVarInfoMap, 
+			String ctxFea, String recurNodeFea, ExprPredItem exprItem, int n){
+		
+		List<String> varFeatersAtN = new ArrayList<>(CONFIG.getVarLimit());
+		String predFeature = exprItem.getExprFeature();
+
+		for(Entry<String, String> entry: varToVarFeaMap.entrySet()) {
+			List<String> varLineList = new ArrayList<>();
+			String varFeaPrefix = entry.getValue();
+			varLineList.add(ctxFea + recurNodeFea); // recurNodeFea is starts with and end with 'TAB' !!
+			
+			varLineList.add(varFeaPrefix);
+			varLineList.add(predFeature);
+			
+			String varName = entry.getKey();
+			VariableInfo info = allVarInfoMap.get(varName);
+			if(info == null) {
+				info = allVarInfoMap.get(varName + "#F");
+				if(info == null) {
+					continue;
+				}
+			}
+
+			varLineList.add("" + n); //position
+			varLineList.add("?"); //putin
+			String currStr = StringUtil.join(varLineList, del);
+			
+			currStr = currStr.replaceAll("\t\t", "\t");
 			varFeatersAtN.add(currStr);
 		}
 		return varFeatersAtN;

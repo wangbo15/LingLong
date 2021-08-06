@@ -1,14 +1,20 @@
 package edu.pku.sei.conditon.dedu.predall;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
+import java.util.List;
 import java.util.Properties;
+
+import edu.pku.sei.conditon.util.FileUtil;
 
 public class ConditionConfig implements Serializable {
 
 	private static final long serialVersionUID = 2437087075125779943L;
 	
-	private static final String CONFIG_FILE = "config.ini";
+	public static final String CONFIG_FILE = "config.ini";
+	
+	public static final String PYTHON_CONFIG_FILE = "../python/env.conf";
 	
 	private static ConditionConfig instance;
 	
@@ -83,6 +89,8 @@ public class ConditionConfig implements Serializable {
 	private int exprVarLimit;
 	private int varLimit;
 	
+	private String learningAlgorithm;
+	
 	public static ConditionConfig getInstance() {
 		if(instance == null) {
 			instance = new ConditionConfig();
@@ -90,12 +98,14 @@ public class ConditionConfig implements Serializable {
 		return instance;
 	}
 	
-	private ConditionConfig() {
+	private void loadConditionConfigFile() {
 		Properties p = new Properties();
 		ClassLoader classLoader = ConditionConfig.class.getClassLoader();
 		
 		try {
-			p.load(classLoader.getResourceAsStream(CONFIG_FILE));
+			InputStream ins = classLoader.getResourceAsStream(CONFIG_FILE);
+			assert ins != null;
+			p.load(ins);
 			
 			this.useSocket = Boolean.parseBoolean(p.getProperty("useSocket", "false"));
 			this.useConcrete = Boolean.parseBoolean(p.getProperty("useConcrete", "false"));
@@ -159,7 +169,28 @@ public class ConditionConfig implements Serializable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private void loadPythonConfigFile() {
+		String pythonCfgFilePath = ClassLoader.getSystemResource("").getPath() + ConditionConfig.PYTHON_CONFIG_FILE;
+		List<String> list = FileUtil.readFileToStringList(pythonCfgFilePath);
+		for(String str: list) {
+			str = str.trim();
+			if(str.startsWith("algorithm")) {
+				learningAlgorithm  = str.split("=")[1].trim().toUpperCase();
+			}
+			
+		}
 		
+		if(learningAlgorithm == null) {
+			System.out.println("EMPTY LEARNING ALG, SET TO XGBOOST");
+			learningAlgorithm = "XGB";
+		}
+	}
+	
+	private ConditionConfig() {
+		loadConditionConfigFile();
+		loadPythonConfigFile();
 	}
 
 	public static String getConfigFile() {
@@ -265,19 +296,33 @@ public class ConditionConfig implements Serializable {
 	public PROCESSING_TYPE getProcessType() {
 		return processType;
 	}
+	
+	public String getLearningAlgorithm() {
+		return this.learningAlgorithm;
+	}
 
-	public String dump() {
+	public String dumpOrder() {
 		StringBuffer sb = new StringBuffer();
 		if(recur) {
-			sb.append("RECUR ");
+			if(bottomUp) {
+				sb.append("RECUR_BU");
+			} else {
+				sb.append("RECUR");
+			}
 		} else {
-			sb.append("NON-RECUR ");
+			if(bottomUp) {
+				sb.append("BOTTOM_UP");
+			} else {
+				sb.append("TOP_DOWN");
+			}
 		}
-		if(bottomUp) {
-			sb.append("BOTTOM UP");
-		} else {
-			sb.append("TOP_DOWN");
-		}
+		return sb.toString();
+	}
+	
+	public String getDumpStr() {
+		StringBuffer sb = new StringBuffer();
+		sb.append(learningAlgorithm + " ");
+		sb.append(dumpOrder());
 		sb.append('\n');
 		
 		if(searchMethod == SearchMethod.BEAM) {
@@ -294,25 +339,33 @@ public class ConditionConfig implements Serializable {
 		}
 		sb.append('\n');
 		
+		sb.append("TYPE CONSTRAINTS: ");
 		if(typeConstraint) {
-			sb.append("TYPE CONSTRAINTS: YES\n");
+			sb.append("YES\n");
 		} else {
-			sb.append("TYPE CONSTRAINTS: NO\n");
+			sb.append("NO\n");
 		}
+		sb.append("COMPILER FILTER: ");
 		if(compilationFilter) {
-			sb.append("COMPILER FILER: YES\n");
+			sb.append("YES\n");
 		} else {
-			sb.append("COMPILER FILTER: NO\n");
+			sb.append("NO\n");
 		}
 		
 		if(recur) {
 			sb.append("TREE HEIGHT LIMIT: " + treeDepth + "\n");
-			sb.append("RECUR_NODE PORB LIMIT: " + rnProbLimit + "\n");
+			if(rnProbLimit != 0.0) {
+				sb.append("RECUR_NODE PORB LIMIT: " + rnProbLimit + "\n");
+			}
 		}
-		sb.append("EXPR PORB LIMIT: " + exprProbLimit + "\n");
-		sb.append("VAR PORB LIMIT: " + varProbLimit + "\n");
+		if(exprProbLimit != 0.0) {
+			sb.append("EXPR PORB LIMIT: " + exprProbLimit + "\n");
+		}
+		if(varProbLimit != 0.0) {
+			sb.append("VAR PORB LIMIT: " + varProbLimit + "\n");
+		}
 		
 		return sb.toString();
 	}
-		
+	
 }

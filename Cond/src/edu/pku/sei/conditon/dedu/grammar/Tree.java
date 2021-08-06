@@ -25,6 +25,9 @@ public abstract class Tree <T extends GrammarNode> {
 	}
 	
 	public abstract List<T> broadFristSearchTraverse();
+	
+	public abstract List<T> bottomUpTraverse();
+	
 	public abstract void dump();
 	
 	@Override

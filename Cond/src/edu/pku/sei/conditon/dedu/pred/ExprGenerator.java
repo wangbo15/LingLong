@@ -18,7 +18,6 @@ import org.eclipse.jdt.core.dom.SimpleName;
 
 import edu.pku.sei.conditon.auxiliary.ASTLocator;
 import edu.pku.sei.conditon.dedu.DeduFeatureGenerator;
-import edu.pku.sei.conditon.dedu.extern.FileInvoker;
 import edu.pku.sei.conditon.dedu.predall.ConditionConfig;
 import edu.pku.sei.conditon.ds.VariableInfo;
 import edu.pku.sei.conditon.util.Pair;
@@ -344,20 +343,20 @@ public class ExprGenerator {
 	        for (List<VarPredItem> list : recursiveResult) { 
 	        	GenExprItem generated = new GenExprItem(exprItem, list);
 	        	
-	        	Map<String, Integer> duplicMap = new HashMap<>();
-	        	if(FileInvoker.designatedVars != null && !FileInvoker.designatedVars.isEmpty()) {
-	        		for(String var : FileInvoker.designatedVars) {
-	        			int time = 0;
-	        			if(duplicMap.containsKey(var)) {
-	        				time = duplicMap.get(var);
-	        			}
-	        			duplicMap.put(var, time + 1);
-	        		}
-        		}
-	        	
-	        	if(checkVarOccurTime(list, duplicMap)){
-	        		continue;
-	        	}
+//	        	Map<String, Integer> duplicMap = new HashMap<>();
+//	        	if(FileInvoker.designatedVars != null && !FileInvoker.designatedVars.isEmpty()) {
+//	        		for(String var : FileInvoker.designatedVars) {
+//	        			int time = 0;
+//	        			if(duplicMap.containsKey(var)) {
+//	        				time = duplicMap.get(var);
+//	        			}
+//	        			duplicMap.put(var, time + 1);
+//	        		}
+//        		}
+//	        	
+//	        	if(checkVarOccurTime(list, duplicMap)){
+//	        		continue;
+//	        	}
 	        	
 	        	allGeneratedExpr.add(generated);
 	        	/*

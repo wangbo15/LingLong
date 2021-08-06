@@ -49,11 +49,17 @@ public class PredAllExperiment {
 	static {
 		prefix = "";
 		if(RECUR) {
-			prefix += "recur.";
-		} else if (BOTTOM_UP){
-			prefix +=  "bu.";
+			if(BOTTOM_UP) {
+				prefix += "recurbu.";
+			} else {
+				prefix += "recur.";
+			}
 		} else {
-			prefix += "td.";
+			if (BOTTOM_UP){
+				prefix +=  "bu.";
+			} else {
+				prefix += "td.";
+			}
 		}
 		prefix += CONFIG.getSearchMethod().toString().toLowerCase();
 		if(CONFIG.getSearchMethod() == SearchMethod.BEAM) {
@@ -78,7 +84,9 @@ public class PredAllExperiment {
 //			}
 			
 			String bugName = proj + "_" + bugid;
-			assert RECUR ? (!BOTTOM_UP) : true; 
+			
+			
+			
 			predAll(bugName, activated);
 		}
 	}
@@ -118,31 +126,52 @@ public class PredAllExperiment {
 		FileUtil.writeStringListToFile(path, lines, false);
 	}
 	
+	/**
+	 * @param proj
+	 * @param bugid
+	 */
 	private static void modifyAndBackupAllTrainingData(String proj, int bugid) {
 		String bugName = proj + "_" + bugid;
 		List<String> paths = new ArrayList<>();
-		String recur = DeduMain.OUTPUT_ROOT + bugName + ".recur.csv";
-		String recurExpr = DeduMain.OUTPUT_ROOT + bugName + ".recur.expr.csv";
-		String recurVar = DeduMain.OUTPUT_ROOT + bugName + ".recur.var.csv";
+		
+		String prefix = DeduMain.OUTPUT_ROOT + bugName;
+		
+		String recur = prefix + ".recur.csv";
+		String recurExpr = prefix + ".recur.expr.csv";
+		String recurVar = prefix + ".recur.var.csv";
 
-		String buExpr = DeduMain.OUTPUT_ROOT + bugName + ".expr.csv";
-		String buV0 = DeduMain.OUTPUT_ROOT + bugName + ".v0.csv";
-		String buVar = DeduMain.OUTPUT_ROOT + bugName + ".var.csv";
+		String buExpr = prefix + ".expr.csv";
+		String buV0 = prefix + ".v0.csv";
+		String buVar = prefix + ".var.csv";
 
-		String tdExpr = DeduMain.OUTPUT_ROOT + bugName + ".topdown.expr.csv";
-		String tdVar = DeduMain.OUTPUT_ROOT + bugName + ".topdown.var.csv";
+		String tdExpr = prefix + ".topdown.expr.csv";
+		String tdVar = prefix + ".topdown.var.csv";
+		
+		String rbV0 = prefix + ".recurbu.v0.csv";
+		String rbE0 = prefix + ".recurbu.e0.csv";
+		String rbR0 = prefix + ".recurbu.r0.csv";
+		String rbR1 = prefix + ".recurbu.r1.csv";
+		String rbE1 = prefix + ".recurbu.e1.csv";
+		String rbV1 = prefix + ".recurbu.v1.csv";
 
 		paths.add(buExpr);
 		paths.add(buV0);
 		paths.add(buVar);
-
+		
 		paths.add(tdExpr);
 		paths.add(tdVar);
-
+		
 		paths.add(recur);
 		paths.add(recurExpr);
 		paths.add(recurVar);
 		
+		paths.add(rbV0);
+		paths.add(rbE0);
+		paths.add(rbR0);
+		paths.add(rbR1);
+		paths.add(rbE1);
+		paths.add(rbV1);
+
 		for(String path: paths) {
 			File f = new File(path);
 			assert f.exists();
@@ -367,8 +396,9 @@ public class PredAllExperiment {
 		}
 		List<String> cmds = FileUtil.readFileToStringList(cmdPath);
 		
-		System.out.println(bugName + " CMDS NUM: " + cmds.size());
-		
+		System.out.println(bugName + " CMDS NUM: " + cmds.size() + ", " + CONFIG.dumpOrder());
+		System.out.println("----------------------------------------------------------------");
+
 		int top1 = 0, top5 = 0, top10 = 0, top25 = 0, top50 = 0, top100 = 0, top200 = 0, top400 = 0;
 		int complex = 0, complexHit = 0, hitSum = 0;
 		
@@ -396,6 +426,7 @@ public class PredAllExperiment {
 				
 				long start = System.currentTimeMillis();
 				
+				// the main entrance
 				PredAllResult result = RealBugExpriment.loadPredRes(argsForInvoker, oracle);
 				
 				long end = System.currentTimeMillis();
@@ -460,7 +491,7 @@ public class PredAllExperiment {
 		
 		int all = cmds.size();
 		
-		StringBuffer sb = new StringBuffer(CONFIG.dump());
+		StringBuffer sb = new StringBuffer(CONFIG.getDumpStr());
 		int limit = 200;
 		if(CONFIG.getSearchMethod() == SearchMethod.BEAM) {
 			limit = CONFIG.getBeamSearchResultLimits();
@@ -504,7 +535,15 @@ public class PredAllExperiment {
 		sb.append("COMPILE TIME: " + totalCompileTime + "\n");
 		sb.append("COMPILE FAILING TIME: " + totalCompileFailingTime + "\n");
 		
-		sb.append("TOTAL TIME USAGE: " + (endAll - startAll) + " ms\n");
+		sb.append("TOTAL TIME USAGE: ");
+		long ms = endAll - startAll;
+		if(ms >= 1000) {
+			sb.append(ms / 1000);
+		} else {
+			double d = ((double) ms) / 1000;
+			sb.append(String.format("%.2f", d));
+		}
+		sb.append(" s\n");
 		sb.append("RESULT SAVED AS: " + recordFilePath + "\n\n");
 		
 		String report = sb.toString();

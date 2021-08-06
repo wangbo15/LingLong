@@ -1,7 +1,5 @@
 package edu.pku.sei.conditon.dedu.pred;
 
-import java.math.BigDecimal;
-
 public abstract class AbsPredItem implements Comparable<AbsPredItem> {
 	protected double score;
 	

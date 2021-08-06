@@ -1,5 +1,6 @@
 package edu.pku.sei.conditon.dedu.real;
 
+import java.io.File;
 import java.util.List;
 
 import edu.pku.sei.conditon.dedu.extern.AbsInvoker;
@@ -9,6 +10,7 @@ import edu.pku.sei.conditon.dedu.extern.pf.BeamSearchStrategy;
 import edu.pku.sei.conditon.dedu.extern.pf.DJSearchStrategy;
 import edu.pku.sei.conditon.dedu.extern.pf.PathFinder;
 import edu.pku.sei.conditon.dedu.extern.pf.PathFindingException;
+import edu.pku.sei.conditon.dedu.extern.pf.RecurBUPathFinder;
 import edu.pku.sei.conditon.dedu.extern.pf.RecurPathFinder;
 import edu.pku.sei.conditon.dedu.extern.pf.SearchStrategy;
 import edu.pku.sei.conditon.dedu.extern.pf.TDPathFinder;
@@ -42,7 +44,12 @@ public class RealBugExpriment {
 		String filePath = argsForInvoker[3];
 		
 		PredAllResult result = new PredAllResult(oracle);
-
+		File srcFile = new File(srcRoot + "/" + filePath);
+		if(!srcFile.exists()) {
+			System.err.println("NO SRC FILE: " + srcFile.getAbsolutePath());
+			return result;
+		}
+		
 		if(CONFIG.isUseConcrete()) {
 			
 			assert CONFIG.getSearchMethod() == SearchMethod.GREEDY_BEAM;
@@ -71,12 +78,18 @@ public class RealBugExpriment {
 			try {
 				PathFinder pf;
 				if(CONFIG.isRecur()) {
-					pf = new RecurPathFinder(projAndBug, srcRoot, testRoot, filePath, line, sid, searchStrategy);
-				} else if(CONFIG.isBottomUp()){
-					pf = new BUPathFinder(projAndBug, srcRoot, testRoot, filePath, line, sid, searchStrategy);
+					if(CONFIG.isBottomUp()){
+						pf = new RecurBUPathFinder(projAndBug, srcRoot, testRoot, filePath, line, sid, searchStrategy);
+					} else {
+						pf = new RecurPathFinder(projAndBug, srcRoot, testRoot, filePath, line, sid, searchStrategy);
+					}
 				} else {
-					pf = new TDPathFinder(projAndBug, srcRoot, testRoot, filePath, line, sid, searchStrategy);
-				}
+					if(CONFIG.isBottomUp()){
+						pf = new BUPathFinder(projAndBug, srcRoot, testRoot, filePath, line, sid, searchStrategy);
+					} else {
+						pf = new TDPathFinder(projAndBug, srcRoot, testRoot, filePath, line, sid, searchStrategy);
+					}
+				} 
 				
 				if(CONFIG.isDebug() && oracle != null) {
 					pf.setOracle(oracle);

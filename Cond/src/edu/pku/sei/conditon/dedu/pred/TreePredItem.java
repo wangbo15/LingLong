@@ -14,7 +14,6 @@ import edu.pku.sei.conditon.dedu.grammar.recur.RecurBoolNode.Location;
 import edu.pku.sei.conditon.dedu.grammar.recur.RecurBoolNode.Opcode;
 import edu.pku.sei.conditon.dedu.predall.ConditionConfig;
 import edu.pku.sei.conditon.util.OperatorUtil;
-import edu.pku.sei.conditon.util.Pair;
 
 public class TreePredItem implements Comparable<TreePredItem> {
 	
@@ -29,6 +28,8 @@ public class TreePredItem implements Comparable<TreePredItem> {
 	private TreePredItem child0;
 	private TreePredItem child1;
 	
+	private boolean isTau = false;
+	
 	// only use in synthesis
 	private BigDecimal finalScore;
 	
@@ -41,10 +42,20 @@ public class TreePredItem implements Comparable<TreePredItem> {
 	
 	private static long instanceNum = 0L;
 	
-	public TreePredItem(TreePredItem parent) {
+	private TreePredItem(TreePredItem parent) {
 		this.parent = parent;
 		
 		instanceNum++;
+	}
+	
+	public static TreePredItem getRootInstance(boolean tau) {
+		TreePredItem item = new TreePredItem(null);
+		item.setTau(tau);
+		return item;
+	}
+	
+	public static TreePredItem getInstance(TreePredItem parent) {
+		return new TreePredItem(parent);
 	}
 	
 	public static void setInstanceNum(long insNum) {
@@ -73,6 +84,18 @@ public class TreePredItem implements Comparable<TreePredItem> {
 		return this.parent;
 	}
 	
+	public void setParent(TreePredItem parent) {
+		this.parent = parent;
+	}
+	
+	public boolean isTau() {
+		return isTau;
+	}
+
+	public void setTau(boolean isTau) {
+		this.isTau = isTau;
+	}
+
 	public TreePredItem getChild0() {
 		return child0;
 	}
@@ -99,6 +122,7 @@ public class TreePredItem implements Comparable<TreePredItem> {
 	}
 
 	public void setExprItem(ExprPredItem exprItem) {
+		assert this.isLeaf();
 		this.exprItem = exprItem;
 	}
 
@@ -106,29 +130,33 @@ public class TreePredItem implements Comparable<TreePredItem> {
 		return varList;
 	}
 
-	public void setVarList(List<VarPredItem> varList) {
-		assert varList != null;
-		this.varList = varList;
-	}
-
 	@Deprecated
 	public List<GenExprItem> getExpressions() {
 		assert this.isLeaf();
 		return expressions;
 	}
-	
+
 	@Deprecated
 	public void setExpressions(List<GenExprItem> expressions) {
 		assert this.isLeaf();
 		this.expressions = expressions;
 	}
-	
+	   
+	public void setVarList(List<VarPredItem> varList) {
+		assert this.isLeaf();
+		assert varList != null;
+		this.varList = varList;
+	}
+
 	public boolean isUnknowRecodeNodeType() {
 		return this.expandItem == null;
 	}
 	
 	public boolean isLeaf() {
-		return this.expandItem.getOpcode() == Opcode.NONE;
+		if (expandItem == null) {
+			return true;
+		}
+		return expandItem.getOpcode() == Opcode.NONE;
 	}
 	
 	public boolean isRoot() {
@@ -158,6 +186,16 @@ public class TreePredItem implements Comparable<TreePredItem> {
 		}
 
 		return finalScore;
+	}
+	
+	public boolean canExpandParent() {
+		if(parent != null) {
+			return false;
+		} else if (getCurrentHight() >= MAX_TREE_HIGHT) {
+			return false;
+		} else {
+			return true;
+		}
 	}
 	
 	public boolean canExpandChild0() {
@@ -192,18 +230,18 @@ public class TreePredItem implements Comparable<TreePredItem> {
 		return node;
 	}
 	
-	private String feature;
+	private String downwardFeature;
 	
-	public String getFeature() {
-		if(feature != null) {
-			return feature;
+	public String getDownwardFeature() {
+		if(downwardFeature != null) {
+			return downwardFeature;
 		}
 		
 		if(this.getParent() == null) {
-			feature = "\ttrue\tNONE\tNIL\tDIRECT\t0\t";
-			return feature;
+			downwardFeature = "\ttrue\tNONE\tNIL\tDIRECT\t0\t";
+			return downwardFeature;
 		}
-		StringBuilder sb = new StringBuilder("\tfalse\t");	//is root
+		StringBuffer sb = new StringBuffer("\tfalse\t");	//is root
 		sb.append(this.getParent().getExpandItem().getOpcode().toString());
 		sb.append("\t");
 		if(this.isChild1()) {
@@ -238,8 +276,35 @@ public class TreePredItem implements Comparable<TreePredItem> {
 		}
 		sb.append(this.getCurrentHightToRoot());
 		sb.append("\t");
-		feature = sb.toString();
-		return feature;
+		downwardFeature = sb.toString();
+		return downwardFeature;
+	}
+	
+	private String upwardFeature;
+	
+	public String getUpwardFeature(){
+		if (upwardFeature != null) {
+			return upwardFeature;
+		}
+		StringBuffer sb = new StringBuffer("\t");
+		sb.append(expandItem.getOpcode().toString());
+		sb.append("\t");
+		if (child0 != null && child0.expandItem != null) {
+			sb.append(child0.expandItem.getOpcode().toString());
+		} else {
+			 sb.append("NIL");
+		}
+		sb.append("\t");
+		if (child1 != null && child1.expandItem != null) {
+			sb.append(child1.expandItem.getOpcode().toString());
+		} else {
+			 sb.append("NIL");
+		}
+		sb.append("\t");
+		sb.append(this.getCurrentHight());
+		sb.append("\t");
+		upwardFeature = sb.toString();
+		return upwardFeature;
 	}
 	
 	public int getChildNodeNum() {
@@ -401,7 +466,6 @@ public class TreePredItem implements Comparable<TreePredItem> {
 		}
 		
 		if(expandItem.getOpcode() == Opcode.NONE) {
-			
 			StringBuffer sb = new StringBuffer(hasBeenSet);
 			if(exprItem != null) {
 				sb.append(":" + exprItem.getPred());
@@ -530,19 +594,6 @@ public class TreePredItem implements Comparable<TreePredItem> {
 		return true;
 	}
 
-	public void remainHighScore() {
-		assert this.isRoot();
-		List<TreePredItem> leafs = this.getLeafsForCompleteTree();
-		int remain = CONFIG.getExprLimit() / leafs.size();
-		
-		for(TreePredItem leaf : leafs) {
-			if(leaf.getExpressions().size() > remain) {
-				List<GenExprItem> subList = leaf.getExpressions().subList(0, remain);
-				leaf.setExpressions(subList);
-			}
-		}
-	}
-	
 	/**
 	 * @return true if the tree has (! (! #) form
 	 */
@@ -562,7 +613,10 @@ public class TreePredItem implements Comparable<TreePredItem> {
 		if(child1 != null) {
 			return child0.isNotNotRedundant() || child1.isNotNotRedundant();
 		}
-		return child0.isNotNotRedundant();
+		if (child0 != null) {
+			return child0.isNotNotRedundant();
+		}
+		return false;
 	}
 	
 	public boolean isCommutativeRedundant() {
@@ -593,6 +647,23 @@ public class TreePredItem implements Comparable<TreePredItem> {
 		return false;
 	}
 	
+	public boolean isBottomLeftMost() {
+		if(this.getCurrentHight() != 1) {
+			return false;
+		}
+		if(this.isChild1()) {
+			return false;
+		}
+		TreePredItem p = this.getParent();
+		while(p != null) {
+			if (p.isChild1()) {
+				return false;
+			}
+			p = p.getParent();
+		}
+		return true;
+	}
+	
 	public static TreePredItem getCorrespondingNode(TreePredItem root, TreePredItem copyRoot, TreePredItem node){
 		List<TreePredItem> rootList = root.broadFristSearchTraverse();
 		List<TreePredItem> copyRootList = copyRoot.broadFristSearchTraverse();
@@ -612,14 +683,15 @@ public class TreePredItem implements Comparable<TreePredItem> {
 		for(TreePredItem item: list) {
 			RecurNodePredItem rcNode = item.getExpandItem();
 			if(rcNode == null) {
-				if(item.isRoot() || item.isChild0()) {
-					result.add(item);
-				} else {
-					TreePredItem sibling = item.getSibling();
-					if(sibling != null && sibling.getExpandItem() != null) {
-						result.add(item);
-					} 
-				}
+//				if(item.isRoot() || item.isChild0()) {
+//					result.add(item);
+//				} else {
+//					TreePredItem sibling = item.getSibling();
+//					if(sibling != null && sibling.getExpandItem() != null) {
+//						result.add(item);
+//					} 
+//				}
+				result.add(item);
 			}
 		}
 		return result;
@@ -664,6 +736,7 @@ public class TreePredItem implements Comparable<TreePredItem> {
 	 */
 	private static void cloneChild(final TreePredItem ori, final TreePredItem copy) {
 		copy.setExpandItem(ori.getExpandItem());
+		copy.isTau = ori.isTau;
 		
 		if(ori.exprItem != null) {
 			copy.exprItem = ori.exprItem;
@@ -683,12 +756,17 @@ public class TreePredItem implements Comparable<TreePredItem> {
 		}
 	}
 	
-	public static TreePredItem sharedCopy(final TreePredItem root, final TreePredItem expansion) {
-		assert root.getParent() == null;//must be a tree root
+	public static TreePredItem sharedCopyFromLeaf(final TreePredItem root, final TreePredItem leaf) {
+		assert root != null && leaf != null;
+		// 'root' must be a tree root
+		assert root.getParent() == null;
+		// 'expansion' must be a leaf
+		assert leaf.isLeaf();
+		
 		Stack<Integer> path = new Stack<>();
 		// Integer: 0: isChild0, 1: isChild1, -1: the leaf node
 		path.push(-1);
-		TreePredItem curr = expansion;
+		TreePredItem curr = leaf;
 		while(curr != null) {
 			if(!curr.isRoot()) {
 				int pos = (curr.isChild0() ? 0 : 1);
@@ -722,7 +800,29 @@ public class TreePredItem implements Comparable<TreePredItem> {
 			}
 			newParent = newItem;
 		}
-		return newItem.getRoot();
+		TreePredItem newRoot = newItem.getRoot();
+		newRoot.isTau = root.isTau;
+		return newRoot;
+	}
+	
+	/**
+	 * @param root
+	 * @return new root with shared children
+	 */
+	public static TreePredItem sharedCopyFromRoot(final TreePredItem root) {
+		assert root != null && root.getParent() == null;
+		TreePredItem newRoot = new TreePredItem(null);
+		newRoot.setChild0(root.getChild0());
+		newRoot.setChild1(root.getChild1());
+		
+		if(root.exprItem != null) {
+			newRoot.exprItem = root.exprItem;
+		}
+		if(root.varList != null) {
+			newRoot.varList = new ArrayList<>(root.varList);
+		}
+		newRoot.isTau = root.isTau;
+		return newRoot;
 	}
 	
 	public static TreePredItem deepCloneFromRoot(final TreePredItem root) {

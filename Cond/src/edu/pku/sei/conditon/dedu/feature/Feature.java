@@ -8,8 +8,10 @@ import edu.pku.sei.conditon.util.FeatureConfiger;
 
 public abstract class Feature implements Serializable {
 	
-	public static final String NONE = AbstractDeduVisitor.NONE;
+	private static final long serialVersionUID = 4258134499097592429L;
 	
+	public static final String NONE = AbstractDeduVisitor.NONE;
+		
 	public static String genFeatureHeaderFromList(String key) {
 		List<FeatureItem> items = FeatureConfiger.getFeatureConfigMap().get(key);
 		StringBuffer sb = new StringBuffer();

@@ -19,4 +19,19 @@ public class RecurNodePredItem extends AbsPredItem{
 		return  opcode.toString() + ": " + score;
 	}
 	
+	public boolean isNone() {
+		return Opcode.NONE.equals(opcode);
+	}
+	
+	public boolean isNot() {
+		return Opcode.NOT.equals(opcode);
+	}
+	
+	public boolean isAnd() {
+		return Opcode.AND.equals(opcode);
+	}
+	
+	public boolean isOr() {
+		return Opcode.OR.equals(opcode);
+	}
 }

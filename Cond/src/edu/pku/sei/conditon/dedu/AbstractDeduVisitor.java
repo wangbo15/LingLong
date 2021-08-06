@@ -55,6 +55,7 @@ import edu.pku.sei.conditon.dedu.feature.ContextFeature;
 import edu.pku.sei.conditon.dedu.feature.PredicateFeature;
 import edu.pku.sei.conditon.dedu.feature.VariableFeature;
 import edu.pku.sei.conditon.dedu.grammar.recur.RecurBoolNode;
+import edu.pku.sei.conditon.dedu.writer.Writer;
 import edu.pku.sei.conditon.ds.MethodInfo;
 import edu.pku.sei.conditon.ds.VariableInfo;
 import edu.pku.sei.conditon.util.Pair;
@@ -64,6 +65,10 @@ import edu.pku.sei.proj.ClsCollectorVisitor;
 import edu.pku.sei.proj.ProInfo;
 
 public abstract class AbstractDeduVisitor extends ASTVisitor{
+	
+	public static final String del = Writer.del;
+	public static final String NONE = Writer.NONE;
+	
 	protected CompilationUnit cu;
 	protected File file;
 	protected char[] rawSource;
@@ -78,102 +83,7 @@ public abstract class AbstractDeduVisitor extends ASTVisitor{
 	protected Map<TypeDeclaration, Map<String,SimpleName>> typeDeclToFields = new HashMap<>();
 
 	protected Map<String, Integer> fileCondMap = new HashMap<>();
-	
-	public static final String del = "\t";
 
-	public static final String NONE = "NIL";
-	
-	public final static String getAllPredHeader() {
-		List<String> header = new ArrayList<>();
-		header.add("id");
-		header.add("pred");
-		header.add("posnum");
-		header.add("tps");
-		header.add("vars");
-		header.add("oricond");
-		String str = StringUtil.join(header, del);
-		return str;
-	}
-	
-	public final static String getButtomUpStepZeroHeader(){
-		String varHead = VariableFeature.getFeatureHeader().replaceAll("\ttpfit", "");
-		varHead = varHead.replaceAll("\toccpostime", "");
-		varHead = varHead.replaceAll("\tused", "");
-		List<String> headers0 = Arrays.asList(ContextFeature.getFeatureHeader(), varHead, "p0time", "putin");
-		String header0 = StringUtil.join(headers0, del);
-		return header0;
-	}
-	
-	public final static String getButtomUpStepOneHeader(){
-		String varHead = VariableFeature.getFeatureHeader().replaceAll("\ttpfit", "");
-//		varHead = varHead.replaceAll("\toccpostime", "");
-		varHead = varHead.replaceAll("\tused", "");
-		List<String> headers1 = Arrays.asList( ContextFeature.getFeatureHeader(), varHead, "pred");
-		String header1 = StringUtil.join(headers1, del);
-		return header1;
-	}
-	
-	public final static String getButtomUpStepTwoHeader(){
-//		String removeUsed = VariableFeature.getFeatureHeader().substring(0, VariableFeature.getFeatureHeader().lastIndexOf('\t'));
-		String varHead = VariableFeature.getFeatureHeader().replaceAll("\ttpfit", "");
-		varHead = varHead.replaceAll("\toccpostime", "");
-		varHead = varHead.replaceAll("\tused", "");
-		
-		List<String> headers = Arrays.asList(ContextFeature.getFeatureHeader(), varHead, 
-				PredicateFeature.getFeatureHeader(), "argused", "tpfit", "occpostime", "used", "position", "putin");
-		
-		String header = StringUtil.join(headers, del);
-		return header;
-	}
-
-	public final static String getTopDownStepZeroHeader(){
-		List<String> headers = Arrays.asList(ContextFeature.getFeatureHeader(), "pred");
-		String header0 = StringUtil.join(headers, del);
-		return header0;
-	}
-	
-	public final static String getTopDownStepOneHeader(){
-		String varHead = VariableFeature.getFeatureHeader().replaceAll("\ttpfit", "");
-		varHead = varHead.replaceAll("\toccpostime", "");
-		varHead = varHead.replaceAll("\tused", "");
-		
-		List<String> headers = Arrays.asList(ContextFeature.getFeatureHeader(), varHead, 
-				PredicateFeature.getFeatureHeader(), "argused", "tpfit", "occpostime", "position", "putin");
-		
-		String header = StringUtil.join(headers, del);
-		return header;
-	}
-	
-	public final static String getRecurNodeTypeHeader(){
-		List<String> headers = Arrays.asList(ContextFeature.getFeatureHeader(), RecurBoolNode.getFeatureHeader(), "nodetp");
-		String header = StringUtil.join(headers, del);
-		return header;
-	}
-	
-
-	public final static String getRecurNodeExprHeader(){
-		List<String> headers = Arrays.asList(ContextFeature.getFeatureHeader(), RecurBoolNode.getFeatureHeader(), "nodetp", "pred");
-		String header = StringUtil.join(headers, del);
-		return header;
-	}
-	
-	
-	public final static String getRecurNodeVarHeader(){
-		String varHead = VariableFeature.getFeatureHeader().replaceAll("\ttpfit", "");
-		varHead = varHead.replaceAll("\toccpostime", "");
-		varHead = varHead.replaceAll("\tused", "");
-		
-		List<String> headers = Arrays.asList(ContextFeature.getFeatureHeader(), 
-				RecurBoolNode.getFeatureHeader(), 
-				"nodetp", 
-				varHead, 
-				PredicateFeature.getFeatureHeader(), 
-				"argused", "tpfit", "occpostime", "position", "putin");
-		
-		String header = StringUtil.join(headers, del);
-		return header;
-	}
-	
 	
 	protected static List<VariableInfo> getNearestNLocalVars(CondVector vec){
 		List<VariableInfo> nearestLocs = new ArrayList<>();
@@ -620,19 +530,8 @@ public abstract class AbstractDeduVisitor extends ASTVisitor{
 		Expression previosCond = previosIf.getExpression();
 //		Pair<List<VariableInfo>, VariableInfo> pair = getAllVarInfo(previosIf, this.getCurrentClassRepre(node), previosCond);
 		String result = previosCond.toString();
-		return predForCSV(result);
+		return Writer.predForCSV(result);
 	}
-	
-	protected static Pattern pattern = Pattern.compile("[\\s\\t]+");
-
-	public static String predForCSV(String expr) {
-		String rightExpr = expr.replace('\n', ' ');
-		Matcher matcher = pattern.matcher(rightExpr);
-		String exprForCsv = matcher.replaceAll(" ");
-		// exprForCsv = ExprNormalization.normalize(exprForCsv, info.getType());
-		return exprForCsv;
-	}
-
 	
 	/******************************************************************/
 	@Override

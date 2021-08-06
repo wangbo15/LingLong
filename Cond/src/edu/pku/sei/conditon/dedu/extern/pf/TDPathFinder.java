@@ -6,11 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
-import edu.pku.sei.conditon.dedu.AbstractDeduVisitor;
-import edu.pku.sei.conditon.dedu.DeduFeatureGenerator;
-import edu.pku.sei.conditon.dedu.extern.AbsInvoker;
 import edu.pku.sei.conditon.dedu.grammar.recur.RecurBoolNode.Opcode;
-import edu.pku.sei.conditon.dedu.pf.Path;
 import edu.pku.sei.conditon.dedu.pf.ProgramPoint;
 import edu.pku.sei.conditon.dedu.pred.ExprGenerator;
 import edu.pku.sei.conditon.dedu.pred.ExprPredItem;
@@ -21,7 +17,6 @@ import edu.pku.sei.conditon.dedu.predall.ConditionConfig;
 import edu.pku.sei.conditon.ds.VariableInfo;
 import edu.pku.sei.conditon.util.CollectionUtil;
 import edu.pku.sei.conditon.util.MathUtil;
-import edu.pku.sei.conditon.util.TypeUtil;
 
 public class TDPathFinder extends PathFinder{
 	
@@ -31,34 +26,9 @@ public class TDPathFinder extends PathFinder{
 			int line, int sid, SearchStrategy searchStrategy) {
 		super(projAndBug, srcRoot, testRoot, filePath, line, sid, searchStrategy);
 	}
-		
-	@Override
-	public void entry() throws PathFindingException{
-		// prepare
-		invoker.prepare();
-		
-		DeduFeatureGenerator.getHitNode(projAndBug, model, srcRoot, testRoot, filePath, line);
-		Map<String, VariableInfo> allVarInfoMap = DeduFeatureGenerator.getAllVariablesMap();
-		Map<String, String> varToVarFeaMap = DeduFeatureGenerator.getVarToVarFeatureMap(projAndBug, model, srcRoot, testRoot, filePath, line);
-		
-		String ctxFea = DeduFeatureGenerator.generateContextFeature(projAndBug, model, srcRoot, testRoot, filePath, line);
-		
-		// make start
-		ProgramPoint start = makeStart();
-		
-		TreeSet<Path> results = getResults(start, ctxFea, varToVarFeaMap, allVarInfoMap);
 
-		List<String> lines = Path.getResultLines(results);
-
-		String proj_Bug_ithSusp = projAndBug + "_" + sid;
-		AbsInvoker.dumpPlainResult(proj, proj_Bug_ithSusp, lines);
-		
-		invoker.finish();
-	}
-	
-
-	private ProgramPoint makeStart() {
-		TreePredItem root = new TreePredItem(null);
+	protected ProgramPoint makeStart() {
+		TreePredItem root = TreePredItem.getRootInstance(true);
 		RecurNodePredItem expandItem = new RecurNodePredItem(Opcode.NONE.toLabel(), 1.0);
 		root.setExpandItem(expandItem);
 		
@@ -135,8 +105,9 @@ public class TDPathFinder extends PathFinder{
 			return Collections.emptyList();
 		}
 		
-		if(root.getVarList() == null)
+		if(root.getVarList() == null) {
 			root.setVarList(new ArrayList<VarPredItem>());
+		}
 		
 		int n = root.getVarList().size();
 		
