@@ -2,23 +2,22 @@
 
 ## I. Introduction
 
-LingLong is an instance of the *Learning to Synthesize (L2S)* abstract, aiming to synthesize Java conditional expressions.
-The original paper of L2S framework can be found in our workshop paper:
-```tex
-@inproceedings{L2S-GI18,
-	title={Learning to Synthesize},
-	author={Xiong, Yingfei and Wang, Bo and Guirong Fu and Linfei Zang},
-	booktitle={International Genetic Improvement Workshop},
-	year={2018},
-	doi={10.1145/3194810.3194816},
-}
-```
+LingLong is an abstract framework that synthesizes codes under given specification, and also estimates the probabilities of codes.
+Cond is an instance of LingLong, aiming to synthesize Java conditional expressions.
 
 
 ### Training Stage
-Given a Java project, LingLong collects all the conditional expressions and parses them.
+
+1. *Training data extraction*. Given a Java project, LingLong collects all the conditional expressions and parses them into options by a specified order, after which LingLong generates training dataset.
+
+2. *Traning Models*. LingLong trains machine learning models against the training data.
 
 ### Synthesizing Stage
+
+1. *Code Location Selection*. Select a certain code location, from which LingLong extracts *Context Features* and fires the generation step.
+
+2. *Expression Generation*. Under the given *context*, LingLong synthesizes *K* conditional expressions ranked by their estimated probabilities.
+
 
 ## II. Environment
 
@@ -29,3 +28,12 @@ Given a Java project, LingLong collects all the conditional expressions and pars
 
 
 ## III. How to run
+
+LingLong is an *Eclipse* project, in which it can be directly imported and executed.
+The main entrence is the class *edu.pku.sei.conditon.dedu.predall.PredAllExperiment*, and the configuration file is *config.ini*.
+
+
+## IV. Generated patches
+
+The generated patches can be found in the folder [Patch](https://github.com/wangbo15/LingLong/tree/main/Patches).
+
