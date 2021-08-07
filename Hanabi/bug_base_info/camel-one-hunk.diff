@@ -1,0 +1,627 @@
+BUG NUMBER:  147
+
+
+######################## bugs-dot-jar_CAMEL-3388_0919a0f6 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/builder/ExpressionBuilder.java b/camel-core/src/main/java/org/apache/camel/builder/ExpressionBuilder.java
+index cdcfa6a..5f73fe3 100644
+--- a/camel-core/src/main/java/org/apache/camel/builder/ExpressionBuilder.java
++++ b/camel-core/src/main/java/org/apache/camel/builder/ExpressionBuilder.java
+@@ -254,12 +254,18 @@ public final class ExpressionBuilder {
+     /**
+      * Returns an expression for the outbound message headers
+      *
+-     * @return an expression object which will return the headers
++     * @return an expression object which will return the headers, will be <tt>null</tt> if the
++     * exchange is not out capable.
+      */
+     public static Expression outHeadersExpression() {
+         return new ExpressionAdapter() {
+             public Object evaluate(Exchange exchange) {
+-                return exchange.getOut().getHeaders();
++                // only get out headers if the MEP is out capable
++                if (ExchangeHelper.isOutCapable(exchange)) {
++                    return exchange.getOut().getHeaders();
++                } else {
++                    return null;
++                }
+             }
+
+             @Override
+
+
+######################## bugs-dot-jar_CAMEL-3690_2a3f3392 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/impl/DefaultCamelContext.java b/camel-core/src/main/java/org/apache/camel/impl/DefaultCamelContext.java
+index a8b9c80..f1dd98d 100644
+--- a/camel-core/src/main/java/org/apache/camel/impl/DefaultCamelContext.java
++++ b/camel-core/src/main/java/org/apache/camel/impl/DefaultCamelContext.java
+@@ -891,7 +891,8 @@ public class DefaultCamelContext extends ServiceSupport implements CamelContext,
+             if (service instanceof IsSingleton) {
+                 singleton = ((IsSingleton) service).isSingleton();
+             }
+-            if (singleton) {
++            // do not add endpoints as they have their own list
++            if (singleton && !(service instanceof Endpoint)) {
+                 servicesToClose.add(service);
+             }
+         }
+
+
+######################## bugs-dot-jar_CAMEL-4388_f39bc60d ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/processor/LogProcessor.java b/camel-core/src/main/java/org/apache/camel/processor/LogProcessor.java
+index 94a4246..ced8977 100644
+--- a/camel-core/src/main/java/org/apache/camel/processor/LogProcessor.java
++++ b/camel-core/src/main/java/org/apache/camel/processor/LogProcessor.java
+@@ -43,8 +43,15 @@ public class LogProcessor implements AsyncProcessor, Traceable {
+
+     @Override
+     public boolean process(Exchange exchange, AsyncCallback callback) {
+-        String msg = expression.evaluate(exchange, String.class);
+-        logger.log(msg);
++        try {
++            String msg = expression.evaluate(exchange, String.class);
++            logger.log(msg);
++        } catch (Exception e) {
++            exchange.setException(e);
++        } finally {
++            // callback must be invoked
++            callback.done(true);
++        }
+         return true;
+     }
+
+
+
+######################## bugs-dot-jar_CAMEL-4474_06a8489a ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/component/file/FileEndpoint.java b/camel-core/src/main/java/org/apache/camel/component/file/FileEndpoint.java
+index 8109971..b8aaff3 100644
+--- a/camel-core/src/main/java/org/apache/camel/component/file/FileEndpoint.java
++++ b/camel-core/src/main/java/org/apache/camel/component/file/FileEndpoint.java
+@@ -49,14 +49,8 @@ public class FileEndpoint extends GenericFileEndpoint<File> {
+         ObjectHelper.notNull(operations, "operations");
+         ObjectHelper.notNull(file, "file");
+
+-        // we assume its a file if the name has a dot in it (eg foo.txt)
+-        boolean isDirectory = file.isDirectory();
+-        if (!isDirectory && file.getName().contains(".")) {
+-            throw new IllegalArgumentException("Only directory is supported. Endpoint must be configured with a valid starting directory: " + file);
+-        }
+-
+         // auto create starting directory if needed
+-        if (!file.exists() && !isDirectory) {
++        if (!file.exists() && !file.isDirectory()) {
+             if (isAutoCreate()) {
+                 log.debug("Creating non existing starting directory: {}", file);
+                 boolean absolute = FileUtil.isAbsolute(file);
+
+
+######################## bugs-dot-jar_CAMEL-4542_c408c3ed ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/model/language/MethodCallExpression.java b/camel-core/src/main/java/org/apache/camel/model/language/MethodCallExpression.java
+index 796cbdd..2ac12c3 100644
+--- a/camel-core/src/main/java/org/apache/camel/model/language/MethodCallExpression.java
++++ b/camel-core/src/main/java/org/apache/camel/model/language/MethodCallExpression.java
+@@ -170,7 +170,7 @@ public class MethodCallExpression extends ExpressionDefinition {
+             BeanHolder holder = new RegistryBean(camelContext, ref);
+             // get the bean which will check that it exists
+             instance = holder.getBean();
+-            answer = new BeanExpression(ref, getMethod());
++            answer = new BeanExpression(instance, getMethod());
+         }
+
+         validateHasMethod(camelContext, instance, beanType, getMethod());
+
+
+######################## bugs-dot-jar_CAMEL-4682_1e54865c ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/impl/DefaultCamelContext.java b/camel-core/src/main/java/org/apache/camel/impl/DefaultCamelContext.java
+index 5cc505b..7857a78 100644
+--- a/camel-core/src/main/java/org/apache/camel/impl/DefaultCamelContext.java
++++ b/camel-core/src/main/java/org/apache/camel/impl/DefaultCamelContext.java
+@@ -1560,7 +1560,7 @@ public class DefaultCamelContext extends ServiceSupport implements ModelCamelCon
+         // shutdown management as the last one
+         shutdownServices(managementStrategy);
+         shutdownServices(lifecycleStrategies);
+-        lifecycleStrategies.clear();
++        // do not clear lifecycleStrategies as we can start Camel again and get the route back as before
+
+         // stop the lazy created so they can be re-created on restart
+         forceStopLazyInitialization();
+
+
+######################## bugs-dot-jar_CAMEL-5570_a57830ed ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/model/OnExceptionDefinition.java b/camel-core/src/main/java/org/apache/camel/model/OnExceptionDefinition.java
+index 50a41a3..f8e42b9 100644
+--- a/camel-core/src/main/java/org/apache/camel/model/OnExceptionDefinition.java
++++ b/camel-core/src/main/java/org/apache/camel/model/OnExceptionDefinition.java
+@@ -144,7 +144,7 @@ public class OnExceptionDefinition extends ProcessorDefinition<OnExceptionDefini
+             return CamelContextHelper.mandatoryLookup(context, redeliveryPolicyRef, RedeliveryPolicy.class);
+         } else if (redeliveryPolicy != null) {
+             return redeliveryPolicy.createRedeliveryPolicy(context, parentPolicy);
+-        } else if (!outputs.isEmpty() && parentPolicy.getMaximumRedeliveries() > 0) {
++        } else if (!outputs.isEmpty() && parentPolicy.getMaximumRedeliveries() != 0) {
+             // if we have outputs, then do not inherit parent maximumRedeliveries
+             // as you would have to explicit configure maximumRedeliveries on this onException to use it
+             // this is the behavior Camel has always had
+
+
+######################## bugs-dot-jar_CAMEL-5704_708e756d ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/processor/MulticastProcessor.java b/camel-core/src/main/java/org/apache/camel/processor/MulticastProcessor.java
+index b2930f6..3993086 100644
+--- a/camel-core/src/main/java/org/apache/camel/processor/MulticastProcessor.java
++++ b/camel-core/src/main/java/org/apache/camel/processor/MulticastProcessor.java
+@@ -1002,6 +1002,10 @@ public class MulticastProcessor extends ServiceSupport implements AsyncProcessor
+         Map<Object, AggregationStrategy> map = CastUtils.cast(property);
+         if (map == null) {
+             map = new HashMap<Object, AggregationStrategy>();
++        } else {
++            // it is not safe to use the map directly as the exchange doesn't have the deep copy of it's properties
++            // we just create a new copy if we need to change the map
++            map = new HashMap<Object, AggregationStrategy>(map);
+         }
+         // store the strategy using this processor as the key
+         // (so we can store multiple strategies on the same exchange)
+
+
+######################## bugs-dot-jar_CAMEL-5707_3f70d612 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/builder/NotifyBuilder.java b/camel-core/src/main/java/org/apache/camel/builder/NotifyBuilder.java
+index 547efab..d5a346c 100644
+--- a/camel-core/src/main/java/org/apache/camel/builder/NotifyBuilder.java
++++ b/camel-core/src/main/java/org/apache/camel/builder/NotifyBuilder.java
+@@ -444,7 +444,7 @@ public class NotifyBuilder {
+             @Override
+             public boolean onExchangeCompleted(Exchange exchange) {
+                 if (exchange.getExchangeId().equals(id)) {
+-                    done.set(false);
++                    done.set(true);
+                 }
+                 return true;
+             }
+
+
+######################## bugs-dot-jar_CAMEL-5720_4a05eccf ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/processor/aggregate/AggregateProcessor.java b/camel-core/src/main/java/org/apache/camel/processor/aggregate/AggregateProcessor.java
+index a5c592b..00cb744 100644
+--- a/camel-core/src/main/java/org/apache/camel/processor/aggregate/AggregateProcessor.java
++++ b/camel-core/src/main/java/org/apache/camel/processor/aggregate/AggregateProcessor.java
+@@ -313,6 +313,9 @@ public class AggregateProcessor extends ServiceSupport implements Processor, Nav
+                 int size = exchange.getProperty(Exchange.AGGREGATED_SIZE, 1, Integer.class);
+                 if (size >= value) {
+                     return "size";
++                } else {
++                    // not completed yet
++                    return null;
+                 }
+             }
+         }
+
+
+######################## bugs-dot-jar_CAMEL-6987_37e0e6bb ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/util/MessageHelper.java b/camel-core/src/main/java/org/apache/camel/util/MessageHelper.java
+index 3e38d23..c81b53b 100644
+--- a/camel-core/src/main/java/org/apache/camel/util/MessageHelper.java
++++ b/camel-core/src/main/java/org/apache/camel/util/MessageHelper.java
+@@ -223,7 +223,9 @@ public final class MessageHelper {
+             } else if (obj instanceof Writer) {
+                 return prepend + "[Body is instance of java.io.Writer]";
+             } else if (obj instanceof WrappedFile || obj instanceof File) {
+-                return prepend + "[Body is file based: " + obj + "]";
++                if (!allowFiles) {
++                    return prepend + "[Body is file based: " + obj + "]";
++                }
+             }
+         }
+
+
+
+######################## bugs-dot-jar_CAMEL-7016_4ed448c7 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/management/mbean/ManagedRoute.java b/camel-core/src/main/java/org/apache/camel/management/mbean/ManagedRoute.java
+index b1cc984..51ce287 100644
+--- a/camel-core/src/main/java/org/apache/camel/management/mbean/ManagedRoute.java
++++ b/camel-core/src/main/java/org/apache/camel/management/mbean/ManagedRoute.java
+@@ -230,6 +230,16 @@ public class ManagedRoute extends ManagedPerformanceCounter implements TimerList
+             return;
+         }
+
++        // if the xml does not contain the route-id then we fix this by adding the actual route id
++        // this may be needed if the route-id was auto-generated, as the intend is to update this route
++        // and not add a new route, adding a new route, use the MBean operation on ManagedCamelContext instead.
++        if (ObjectHelper.isEmpty(def.getId())) {
++            def.setId(getRouteId());
++        } else if (!def.getId().equals(getRouteId())) {
++            throw new IllegalArgumentException("Cannot update route from XML as routeIds does not match. routeId: "
++                    + getRouteId() + ", routeId from XML: " + def.getId());
++        }
++
+         // add will remove existing route first
+         context.addRouteDefinition(def);
+     }
+
+
+######################## bugs-dot-jar_CAMEL-7125_6641f182 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/support/TokenXMLExpressionIterator.java b/camel-core/src/main/java/org/apache/camel/support/TokenXMLExpressionIterator.java
+index 3048c64..ba21a71 100644
+--- a/camel-core/src/main/java/org/apache/camel/support/TokenXMLExpressionIterator.java
++++ b/camel-core/src/main/java/org/apache/camel/support/TokenXMLExpressionIterator.java
+@@ -47,7 +47,7 @@ import org.apache.camel.util.ObjectHelper;
+ public class TokenXMLExpressionIterator extends ExpressionAdapter {
+     private static final Pattern NAMESPACE_PATTERN = Pattern.compile("xmlns(:\\w+|)\\s*=\\s*('[^']+'|\"[^\"]+\")");
+     private static final String SCAN_TOKEN_NS_PREFIX_REGEX = "([^:<>]{1,15}?:|)";
+-    private static final String SCAN_BLOCK_TOKEN_REGEX_TEMPLATE = "<{0}(\\s+[^/^>]*)?/>|<{0}(\\s+[^>]*)?>(?:(?!(</{0}\\s*>)).)*</{0}\\s*>";
++    private static final String SCAN_BLOCK_TOKEN_REGEX_TEMPLATE = "<{0}(\\s+[^>]*)?/>|<{0}(\\s+[^>]*)?>(?:(?!(</{0}\\s*>)).)*</{0}\\s*>";
+     private static final String SCAN_PARENT_TOKEN_REGEX_TEMPLATE = "<{0}(\\s+[^>]*\\s*)?>";
+
+     protected final String tagToken;
+
+
+######################## bugs-dot-jar_CAMEL-7130_7c9326f4 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/builder/xml/XsltBuilder.java b/camel-core/src/main/java/org/apache/camel/builder/xml/XsltBuilder.java
+index 8984828..3a7b9a4 100644
+--- a/camel-core/src/main/java/org/apache/camel/builder/xml/XsltBuilder.java
++++ b/camel-core/src/main/java/org/apache/camel/builder/xml/XsltBuilder.java
+@@ -79,7 +79,7 @@ public class XsltBuilder implements Processor {
+     private URIResolver uriResolver;
+     private boolean deleteOutputFile;
+     private ErrorListener errorListener = new XsltErrorListener();
+-    private boolean allowStAX;
++    private boolean allowStAX = true;
+
+     public XsltBuilder() {
+     }
+
+
+######################## bugs-dot-jar_CAMEL-7130_cc192f87 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/builder/xml/XsltBuilder.java b/camel-core/src/main/java/org/apache/camel/builder/xml/XsltBuilder.java
+index 3a7b9a4..d4291b2 100644
+--- a/camel-core/src/main/java/org/apache/camel/builder/xml/XsltBuilder.java
++++ b/camel-core/src/main/java/org/apache/camel/builder/xml/XsltBuilder.java
+@@ -452,9 +452,6 @@ public class XsltBuilder implements Processor {
+             return (Source) body;
+         }
+         Source source = null;
+-        if (body instanceof InputStream) {
+-            return new StreamSource((InputStream)body);
+-        }
+         if (body != null) {
+             if (isAllowStAX()) {
+                 source = exchange.getContext().getTypeConverter().tryConvertTo(StAXSource.class, exchange, body);
+
+
+######################## bugs-dot-jar_CAMEL-7209_5f78c646 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/converter/NIOConverter.java b/camel-core/src/main/java/org/apache/camel/converter/NIOConverter.java
+index 9a2b60a..0bf08ac 100644
+--- a/camel-core/src/main/java/org/apache/camel/converter/NIOConverter.java
++++ b/camel-core/src/main/java/org/apache/camel/converter/NIOConverter.java
+@@ -99,6 +99,7 @@ public final class NIOConverter {
+             bytes = value.getBytes();
+         }
+         buf.put(bytes);
++        buf.flip();
+         return buf;
+     }
+
+
+
+######################## bugs-dot-jar_CAMEL-7241_18c23fa8 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/converter/NIOConverter.java b/camel-core/src/main/java/org/apache/camel/converter/NIOConverter.java
+index 41273b6..e1cf6d6 100644
+--- a/camel-core/src/main/java/org/apache/camel/converter/NIOConverter.java
++++ b/camel-core/src/main/java/org/apache/camel/converter/NIOConverter.java
+@@ -54,7 +54,7 @@ public final class NIOConverter {
+
+     @Converter
+     public static String toString(ByteBuffer buffer, Exchange exchange) throws IOException {
+-        return IOConverter.toString(buffer.array(), exchange);
++        return IOConverter.toString(toByteArray(buffer), exchange);
+     }
+
+     @Converter
+
+
+######################## bugs-dot-jar_CAMEL-7344_91228815 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/impl/DefaultEndpoint.java b/camel-core/src/main/java/org/apache/camel/impl/DefaultEndpoint.java
+index 3dae289..badd48e 100644
+--- a/camel-core/src/main/java/org/apache/camel/impl/DefaultEndpoint.java
++++ b/camel-core/src/main/java/org/apache/camel/impl/DefaultEndpoint.java
+@@ -136,7 +136,13 @@ public abstract class DefaultEndpoint extends ServiceSupport implements Endpoint
+
+     @Override
+     public String toString() {
+-        return String.format("Endpoint[%s]", URISupport.sanitizeUri(getEndpointUri()));
++        String value = null;
++        try {
++            value = getEndpointUri();
++        } catch (RuntimeException e) {
++            // ignore any exception and use null for building the string value
++        }
++        return String.format("Endpoint[%s]", URISupport.sanitizeUri(value));
+     }
+
+     /**
+
+
+######################## bugs-dot-jar_CAMEL-7359_9cb09d14 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/language/simple/ast/SimpleFunctionExpression.java b/camel-core/src/main/java/org/apache/camel/language/simple/ast/SimpleFunctionExpression.java
+index 32a22b2..4eedcba 100644
+--- a/camel-core/src/main/java/org/apache/camel/language/simple/ast/SimpleFunctionExpression.java
++++ b/camel-core/src/main/java/org/apache/camel/language/simple/ast/SimpleFunctionExpression.java
+@@ -238,7 +238,8 @@ public class SimpleFunctionExpression extends LiteralExpression {
+
+             String key = ObjectHelper.before(keyAndType, ",");
+             String type = ObjectHelper.after(keyAndType, ",");
+-            if (ObjectHelper.isEmpty(key) || ObjectHelper.isEmpty(type)) {
++            remainder = ObjectHelper.after(remainder, ")");
++            if (ObjectHelper.isEmpty(key) || ObjectHelper.isEmpty(type) || ObjectHelper.isNotEmpty(remainder)) {
+                 throw new SimpleParserException("Valid syntax: ${headerAs(key, type)} was: " + function, token.getIndex());
+             }
+             key = StringHelper.removeQuotes(key);
+
+
+######################## bugs-dot-jar_CAMEL-7448_35bde2b2 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/processor/Throttler.java b/camel-core/src/main/java/org/apache/camel/processor/Throttler.java
+index f70325d..c986bf7 100644
+--- a/camel-core/src/main/java/org/apache/camel/processor/Throttler.java
++++ b/camel-core/src/main/java/org/apache/camel/processor/Throttler.java
+@@ -108,7 +108,7 @@ public class Throttler extends DelayProcessorSupport implements Traceable {
+     protected long calculateDelay(Exchange exchange) {
+         // evaluate as Object first to see if we get any result at all
+         Object result = maxRequestsPerPeriodExpression.evaluate(exchange, Object.class);
+-        if (result == null) {
++        if (maximumRequestsPerPeriod == 0 && result == null) {
+             throw new RuntimeExchangeException("The max requests per period expression was evaluated as null: " + maxRequestsPerPeriodExpression, exchange);
+         }
+
+
+
+######################## bugs-dot-jar_CAMEL-7459_57ba1bde ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/util/URISupport.java b/camel-core/src/main/java/org/apache/camel/util/URISupport.java
+index 4b06a13..0f37a2c 100644
+--- a/camel-core/src/main/java/org/apache/camel/util/URISupport.java
++++ b/camel-core/src/main/java/org/apache/camel/util/URISupport.java
+@@ -155,7 +155,7 @@ public final class URISupport {
+                 char ch = uri.charAt(i);
+                 // look ahead of the next char
+                 char next;
+-                if (i < uri.length() - 2) {
++                if (i <= uri.length() - 2) {
+                     next = uri.charAt(i + 1);
+                 } else {
+                     next = '\u0000';
+
+
+######################## bugs-dot-jar_CAMEL-7611_e30f1c53 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/util/KeyValueHolder.java b/camel-core/src/main/java/org/apache/camel/util/KeyValueHolder.java
+index 3cf5bf9..a9baf00 100644
+--- a/camel-core/src/main/java/org/apache/camel/util/KeyValueHolder.java
++++ b/camel-core/src/main/java/org/apache/camel/util/KeyValueHolder.java
+@@ -53,6 +53,8 @@ public class KeyValueHolder<K, V> {
+
+         if (key != null ? !key.equals(that.key) : that.key != null) {
+             return false;
++        } else if (value != null ? !value.equals(that.value) : that.value != null) {
++            return false;
+         }
+
+         return true;
+
+
+######################## bugs-dot-jar_CAMEL-7795_19b2aa31 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/impl/MDCUnitOfWork.java b/camel-core/src/main/java/org/apache/camel/impl/MDCUnitOfWork.java
+index 62f6b16..1726b80 100644
+--- a/camel-core/src/main/java/org/apache/camel/impl/MDCUnitOfWork.java
++++ b/camel-core/src/main/java/org/apache/camel/impl/MDCUnitOfWork.java
+@@ -217,13 +217,15 @@ public class MDCUnitOfWork extends DefaultUnitOfWork {
+                     if (correlationId != null) {
+                         MDC.put(MDC_CORRELATION_ID, correlationId);
+                     }
+-                    if (routeId != null) {
+-                        MDC.put(MDC_ROUTE_ID, routeId);
+-                    }
+                     if (camelContextId != null) {
+                         MDC.put(MDC_CAMEL_CONTEXT_ID, camelContextId);
+                     }
+                 }
++                // need to setup the routeId finally
++                if (routeId != null) {
++                    MDC.put(MDC_ROUTE_ID, routeId);
++                }
++
+             } finally {
+                 // muse ensure delegate is invoked
+                 delegate.done(doneSync);
+
+
+######################## bugs-dot-jar_CAMEL-7883_d57f402b ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/component/validator/DefaultLSResourceResolver.java b/camel-core/src/main/java/org/apache/camel/component/validator/DefaultLSResourceResolver.java
+index 622e257..38fa704 100644
+--- a/camel-core/src/main/java/org/apache/camel/component/validator/DefaultLSResourceResolver.java
++++ b/camel-core/src/main/java/org/apache/camel/component/validator/DefaultLSResourceResolver.java
+@@ -117,8 +117,7 @@ public class DefaultLSResourceResolver implements LSResourceResolver {
+
+         @Override
+         public Reader getCharacterStream() {
+-            InputStream is = getByteStream();
+-            return camelContext.getTypeConverter().convertTo(Reader.class, is);
++            return null;
+         }
+
+         @Override
+
+
+######################## bugs-dot-jar_CAMEL-7990_d581c4a4 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/processor/idempotent/IdempotentConsumer.java b/camel-core/src/main/java/org/apache/camel/processor/idempotent/IdempotentConsumer.java
+index 100a660..d3afe7a 100644
+--- a/camel-core/src/main/java/org/apache/camel/processor/idempotent/IdempotentConsumer.java
++++ b/camel-core/src/main/java/org/apache/camel/processor/idempotent/IdempotentConsumer.java
+@@ -80,7 +80,9 @@ public class IdempotentConsumer extends ServiceSupport implements AsyncProcessor
+     public boolean process(Exchange exchange, AsyncCallback callback) {
+         final String messageId = messageIdExpression.evaluate(exchange, String.class);
+         if (messageId == null) {
+-            throw new NoMessageIdException(exchange, messageIdExpression);
++            exchange.setException(new NoMessageIdException(exchange, messageIdExpression));
++            callback.done(true);
++            return true;
+         }
+
+         boolean newKey;
+
+
+######################## bugs-dot-jar_CAMEL-8081_2e985f9b ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/processor/MulticastProcessor.java b/camel-core/src/main/java/org/apache/camel/processor/MulticastProcessor.java
+index 1d579cd..38e70bb 100644
+--- a/camel-core/src/main/java/org/apache/camel/processor/MulticastProcessor.java
++++ b/camel-core/src/main/java/org/apache/camel/processor/MulticastProcessor.java
+@@ -442,10 +442,7 @@ public class MulticastProcessor extends ServiceSupport implements AsyncProcessor
+                     }
+                 }
+
+-                if (future == null && timedOut) {
+-                    // we are timed out and no more tasks complete so break out
+-                    break;
+-                } else if (future == null) {
++                if (future == null) {
+                     // timeout occurred
+                     AggregationStrategy strategy = getAggregationStrategy(null);
+                     if (strategy instanceof TimeoutAwareAggregationStrategy) {
+
+
+######################## bugs-dot-jar_CAMEL-8106_39ccf5d6 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/support/XMLTokenExpressionIterator.java b/camel-core/src/main/java/org/apache/camel/support/XMLTokenExpressionIterator.java
+index f233281..19cc2a6 100644
+--- a/camel-core/src/main/java/org/apache/camel/support/XMLTokenExpressionIterator.java
++++ b/camel-core/src/main/java/org/apache/camel/support/XMLTokenExpressionIterator.java
+@@ -575,7 +575,8 @@ public class XMLTokenExpressionIterator extends ExpressionAdapter implements Nam
+             try {
+                 nextToken = getNextToken();
+             } catch (XMLStreamException e) {
+-                //
++                nextToken = null;
++                throw new RuntimeException(e);
+             }
+             return o;
+         }
+
+
+######################## bugs-dot-jar_CAMEL-8584_dd0f74c0 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/processor/loadbalancer/CircuitBreakerLoadBalancer.java b/camel-core/src/main/java/org/apache/camel/processor/loadbalancer/CircuitBreakerLoadBalancer.java
+index f760311..645b477 100644
+--- a/camel-core/src/main/java/org/apache/camel/processor/loadbalancer/CircuitBreakerLoadBalancer.java
++++ b/camel-core/src/main/java/org/apache/camel/processor/loadbalancer/CircuitBreakerLoadBalancer.java
+@@ -200,11 +200,6 @@ public class CircuitBreakerLoadBalancer extends LoadBalancerSupport implements T
+
+     private boolean rejectExchange(final Exchange exchange, final AsyncCallback callback) {
+         exchange.setException(new RejectedExecutionException("CircuitBreaker Open: failures: " + failures + ", lastFailure: " + lastFailure));
+-        /*
+-         * If the circuit opens, we have to prevent the execution of any
+-         * processor. The failures count can be set to 0.
+-         */
+-        failures.set(0);
+         callback.done(true);
+         return true;
+     }
+
+
+######################## bugs-dot-jar_CAMEL-8592_57f72cd9 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/processor/aggregate/AbstractListAggregationStrategy.java b/camel-core/src/main/java/org/apache/camel/processor/aggregate/AbstractListAggregationStrategy.java
+index ad2ec8e..d4ff93f 100644
+--- a/camel-core/src/main/java/org/apache/camel/processor/aggregate/AbstractListAggregationStrategy.java
++++ b/camel-core/src/main/java/org/apache/camel/processor/aggregate/AbstractListAggregationStrategy.java
+@@ -62,7 +62,7 @@ public abstract class AbstractListAggregationStrategy<V> implements CompletionAw
+
+     @SuppressWarnings("unchecked")
+     public void onCompletion(Exchange exchange) {
+-        if (isStoreAsBodyOnCompletion()) {
++        if (exchange != null && isStoreAsBodyOnCompletion()) {
+             List<V> list = (List<V>) exchange.removeProperty(Exchange.GROUPED_EXCHANGE);
+             if (list != null) {
+                 exchange.getIn().setBody(list);
+
+
+######################## bugs-dot-jar_CAMEL-9217_e7ac45b6 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/impl/DefaultComponent.java b/camel-core/src/main/java/org/apache/camel/impl/DefaultComponent.java
+index c7ab7ff..c6492ea 100644
+--- a/camel-core/src/main/java/org/apache/camel/impl/DefaultComponent.java
++++ b/camel-core/src/main/java/org/apache/camel/impl/DefaultComponent.java
+@@ -196,12 +196,6 @@ public abstract class DefaultComponent extends ServiceSupport implements Compone
+      * @throws ResolveEndpointFailedException should be thrown if the URI validation failed
+      */
+     protected void validateURI(String uri, String path, Map<String, Object> parameters) {
+-        // check for uri containing & but no ? marker
+-        if (uri.contains("&") && !uri.contains("?")) {
+-            throw new ResolveEndpointFailedException(uri, "Invalid uri syntax: no ? marker however the uri "
+-                + "has & parameter separators. Check the uri if its missing a ? marker.");
+-        }
+-
+         // check for uri containing double && markers without include by RAW
+         if (uri.contains("&&")) {
+             Pattern pattern = Pattern.compile("RAW(.*&&.*)");
+
+
+######################## bugs-dot-jar_CAMEL-9238_169b981e ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/component/file/GenericFile.java b/camel-core/src/main/java/org/apache/camel/component/file/GenericFile.java
+index 907de21..e517550 100644
+--- a/camel-core/src/main/java/org/apache/camel/component/file/GenericFile.java
++++ b/camel-core/src/main/java/org/apache/camel/component/file/GenericFile.java
+@@ -185,7 +185,7 @@ public class GenericFile<T> implements WrappedFile<T>  {
+
+         // Make sure the names is normalized.
+         String newFileName = FileUtil.normalizePath(newName);
+-        String newEndpointPath = FileUtil.normalizePath(endpointPath);
++        String newEndpointPath = FileUtil.normalizePath(endpointPath.endsWith("" + File.separatorChar) ? endpointPath : endpointPath + File.separatorChar);
+
+         LOG.trace("Normalized endpointPath: {}", newEndpointPath);
+         LOG.trace("Normalized newFileName: ()", newFileName);
+
+
+######################## bugs-dot-jar_CAMEL-9243_1957a828 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/component/bean/BeanInfo.java b/camel-core/src/main/java/org/apache/camel/component/bean/BeanInfo.java
+index d3c7214..a2f6ce8 100644
+--- a/camel-core/src/main/java/org/apache/camel/component/bean/BeanInfo.java
++++ b/camel-core/src/main/java/org/apache/camel/component/bean/BeanInfo.java
+@@ -987,7 +987,9 @@ public class BeanInfo {
+         Iterator<MethodInfo> it = methods.iterator();
+         while (it.hasNext()) {
+             MethodInfo info = it.next();
+-            if (Modifier.isAbstract(info.getMethod().getModifiers())) {
++            // if the class is an interface then keep the method
++            boolean isFromInterface = Modifier.isInterface(info.getMethod().getDeclaringClass().getModifiers());
++            if (!isFromInterface && Modifier.isAbstract(info.getMethod().getModifiers())) {
+                 // we cannot invoke an abstract method
+                 it.remove();
+             }
+
+
+######################## bugs-dot-jar_CAMEL-9269_62b2042b ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/builder/NotifyBuilder.java b/camel-core/src/main/java/org/apache/camel/builder/NotifyBuilder.java
+index 1c42ad9..e5933494 100644
+--- a/camel-core/src/main/java/org/apache/camel/builder/NotifyBuilder.java
++++ b/camel-core/src/main/java/org/apache/camel/builder/NotifyBuilder.java
+@@ -154,6 +154,11 @@ public class NotifyBuilder {
+             @Override
+             public boolean onExchange(Exchange exchange) {
+                 String id = EndpointHelper.getRouteIdFromEndpoint(exchange.getFromEndpoint());
++
++                if (id == null) {
++                    id = exchange.getFromRouteId();
++                }
++
+                 // filter non matching exchanges
+                 return EndpointHelper.matchPattern(id, routeId);
+             }
+
+
+######################## bugs-dot-jar_CAMEL-9340_1cab39f6 ############################
+diff --git a/camel-core/src/main/java/org/apache/camel/processor/idempotent/FileIdempotentRepository.java b/camel-core/src/main/java/org/apache/camel/processor/idempotent/FileIdempotentRepository.java
+index 301fb0d..2451daf 100644
+--- a/camel-core/src/main/java/org/apache/camel/processor/idempotent/FileIdempotentRepository.java
++++ b/camel-core/src/main/java/org/apache/camel/processor/idempotent/FileIdempotentRepository.java
+@@ -290,7 +290,9 @@ public class FileIdempotentRepository extends ServiceSupport implements Idempote
+         if (!fileStore.exists()) {
+             LOG.debug("Creating filestore: {}", fileStore);
+             File parent = fileStore.getParentFile();
+-            parent.mkdirs();
++            if (parent != null) {
++                parent.mkdirs();
++            }
+             boolean created = FileUtil.createNewFile(fileStore);
+             if (!created) {
+                 throw new IOException("Cannot create filestore: " + fileStore);
+
+TOTAL PATCH NUM:  34

@@ -230,7 +230,7 @@ public class DeduMain {
 			String subName = subject.getName();
 			int bugId = subject.getId();
 			
-			if(!(subName.equalsIgnoreCase("chart") && bugId == 16)){
+			if(!(subName.equalsIgnoreCase("math") && bugId == 106)){
 				continue;
 			}
 			

@@ -1,0 +1,302 @@
+BUG NUMBER:  98
+
+######################## bugs-dot-jar_ACCUMULO-151_b007b22e ############################
+diff --git a/src/core/src/main/java/org/apache/accumulo/core/iterators/Combiner.java b/src/core/src/main/java/org/apache/accumulo/core/iterators/Combiner.java
+index 4da51d3..173b00d 100644
+--- a/src/core/src/main/java/org/apache/accumulo/core/iterators/Combiner.java
++++ b/src/core/src/main/java/org/apache/accumulo/core/iterators/Combiner.java
+@@ -152,15 +152,15 @@ public abstract class Combiner extends WrappingIterator implements OptionDescrib
+   private Key workKey = new Key();
+   
+   /*
+-   * Sets the topKey and topValue based on the top key of the source. If the column of the source top key is in the set of combiners, or if there are no columns
+-   * in the set of combiners, topKey will be the top key of the source and topValue will be the result of the reduce method. Otherwise, topKey and topValue will
+-   * be null.
++   * Sets the topKey and topValue based on the top key of the source. If the column of the source top key is in the set of combiners, topKey will be the top key
++   * of the source and topValue will be the result of the reduce method. Otherwise, topKey and topValue will be unchanged. (They are always set to null before
++   * this method is called.)
+    */
+   private void findTop() throws IOException {
+     // check if aggregation is needed
+     if (super.hasTop()) {
+       workKey.set(super.getTopKey());
+-      if (combiners.isEmpty() || combiners.contains(workKey)) {
++      if (combiners.contains(workKey)) {
+         if (workKey.isDeleted())
+           return;
+         topKey = workKey;
+
+
+######################## bugs-dot-jar_ACCUMULO-1544_0cf2ff72 ############################
+diff --git a/minicluster/src/main/java/org/apache/accumulo/minicluster/MiniAccumuloCluster.java b/minicluster/src/main/java/org/apache/accumulo/minicluster/MiniAccumuloCluster.java
+index 7c27dd8..43fa6cb 100644
+--- a/minicluster/src/main/java/org/apache/accumulo/minicluster/MiniAccumuloCluster.java
++++ b/minicluster/src/main/java/org/apache/accumulo/minicluster/MiniAccumuloCluster.java
+@@ -337,7 +337,7 @@ public class MiniAccumuloCluster {
+     if (!initialized) {
+       // sleep a little bit to let zookeeper come up before calling init, seems to work better
+       UtilWaitThread.sleep(250);
+-      Process initProcess = exec(Initialize.class, "--instance-name", config.getInstanceName(), "--password", config.getRootPassword(), "--username", "root");
++      Process initProcess = exec(Initialize.class, "--instance-name", config.getInstanceName(), "--password", config.getRootPassword());
+       int ret = initProcess.waitFor();
+       if (ret != 0) {
+         throw new RuntimeException("Initialize process returned " + ret);
+
+
+######################## bugs-dot-jar_ACCUMULO-1661_13eb19c2 ############################
+diff --git a/core/src/main/java/org/apache/accumulo/core/client/mapreduce/lib/util/InputConfigurator.java b/core/src/main/java/org/apache/accumulo/core/client/mapreduce/lib/util/InputConfigurator.java
+index ff14107..b0e649b 100644
+--- a/core/src/main/java/org/apache/accumulo/core/client/mapreduce/lib/util/InputConfigurator.java
++++ b/core/src/main/java/org/apache/accumulo/core/client/mapreduce/lib/util/InputConfigurator.java
+@@ -238,8 +238,15 @@ public class InputConfigurator extends ConfiguratorBase {
+    */
+   public static Set<Pair<Text,Text>> getFetchedColumns(Class<?> implementingClass, Configuration conf) {
+     ArgumentChecker.notNull(conf);
+-
+-    return deserializeFetchedColumns(conf.getStringCollection(enumToConfKey(implementingClass, ScanOpts.COLUMNS)));
++    String confValue = conf.get(enumToConfKey(implementingClass, ScanOpts.COLUMNS));
++    List<String> serialized = new ArrayList<String>();
++    if (confValue != null) {
++      // Split and include any trailing empty strings to allow empty column families
++      for (String val : confValue.split(",", -1)) {
++        serialized.add(val);
++      }
++    }
++    return deserializeFetchedColumns(serialized);
+   }
+ 
+   public static Set<Pair<Text,Text>> deserializeFetchedColumns(Collection<String> serialized) {
+
+
+######################## bugs-dot-jar_ACCUMULO-1730_872b6db3 ############################
+diff --git a/core/src/main/java/org/apache/accumulo/core/security/ColumnVisibility.java b/core/src/main/java/org/apache/accumulo/core/security/ColumnVisibility.java
+index 55763bc..f9c8382 100644
+--- a/core/src/main/java/org/apache/accumulo/core/security/ColumnVisibility.java
++++ b/core/src/main/java/org/apache/accumulo/core/security/ColumnVisibility.java
+@@ -302,6 +302,7 @@ public class ColumnVisibility {
+                 result.add(c);
+             else
+               result.add(child);
++            result.end = index - 1;
+             return result;
+           }
+           case '"': {
+
+######################## bugs-dot-jar_ACCUMULO-2659_019edb16 ############################
+diff --git a/core/src/main/java/org/apache/accumulo/core/client/mapred/InputFormatBase.java b/core/src/main/java/org/apache/accumulo/core/client/mapred/InputFormatBase.java
+index 54b983f..0cee355 100644
+--- a/core/src/main/java/org/apache/accumulo/core/client/mapred/InputFormatBase.java
++++ b/core/src/main/java/org/apache/accumulo/core/client/mapred/InputFormatBase.java
+@@ -322,6 +322,9 @@ public abstract class InputFormatBase<K,V> extends AbstractInputFormat<K,V> {
+         iterators = getIterators(job);
+       } else {
+         iterators = split.getIterators();
++        if (null == iterators) {
++          iterators = getIterators(job);
++        }
+       }
+ 
+       setupIterators(iterators, scanner);
+
+
+######################## bugs-dot-jar_ACCUMULO-2713_6138a80f ############################
+diff --git a/core/src/main/java/org/apache/accumulo/core/security/crypto/CryptoModuleFactory.java b/core/src/main/java/org/apache/accumulo/core/security/crypto/CryptoModuleFactory.java
+index 649bfc8..4d04125 100644
+--- a/core/src/main/java/org/apache/accumulo/core/security/crypto/CryptoModuleFactory.java
++++ b/core/src/main/java/org/apache/accumulo/core/security/crypto/CryptoModuleFactory.java
+@@ -258,6 +258,7 @@ public class CryptoModuleFactory {
+     // Get all the options from the configuration
+     Map<String,String> cryptoOpts = conf.getAllPropertiesWithPrefix(Property.CRYPTO_PREFIX);
+     cryptoOpts.putAll(conf.getAllPropertiesWithPrefix(Property.INSTANCE_PREFIX));
++    cryptoOpts.remove(Property.INSTANCE_SECRET.getKey());
+     cryptoOpts.put(Property.CRYPTO_BLOCK_STREAM_SIZE.getKey(), Integer.toString((int) conf.getMemoryInBytes(Property.CRYPTO_BLOCK_STREAM_SIZE)));
+ 
+     return fillParamsObjectFromStringMap(params, cryptoOpts);
+
+
+######################## bugs-dot-jar_ACCUMULO-2748_ff8c2383 ############################
+diff --git a/core/src/main/java/org/apache/accumulo/core/client/mock/MockTableOperations.java b/core/src/main/java/org/apache/accumulo/core/client/mock/MockTableOperations.java
+index dc4a619..64f8225 100644
+--- a/core/src/main/java/org/apache/accumulo/core/client/mock/MockTableOperations.java
++++ b/core/src/main/java/org/apache/accumulo/core/client/mock/MockTableOperations.java
+@@ -314,8 +314,8 @@ public class MockTableOperations extends TableOperationsHelper {
+     if (!exists(tableName))
+       throw new TableNotFoundException(tableName, tableName, "");
+     MockTable t = acu.tables.get(tableName);
+-    Text startText = new Text(start);
+-    Text endText = new Text(end);
++    Text startText = start != null ? new Text(start) : new Text();
++    Text endText = end != null ? new Text(end) : new Text(t.table.lastKey().getRow().getBytes());
+     startText.append(ZERO, 0, 1);
+     endText.append(ZERO, 0, 1);
+     Set<Key> keep = new TreeSet<Key>(t.table.subMap(new Key(startText), new Key(endText)).keySet());
+
+
+######################## bugs-dot-jar_ACCUMULO-3150_72fd6bec ############################
+diff --git a/minicluster/src/main/java/org/apache/accumulo/minicluster/MiniAccumuloCluster.java b/minicluster/src/main/java/org/apache/accumulo/minicluster/MiniAccumuloCluster.java
+index 8246c51..c9aa1f1 100644
+--- a/minicluster/src/main/java/org/apache/accumulo/minicluster/MiniAccumuloCluster.java
++++ b/minicluster/src/main/java/org/apache/accumulo/minicluster/MiniAccumuloCluster.java
+@@ -270,6 +270,7 @@ public class MiniAccumuloCluster {
+     mergePropWithRandomPort(siteConfig, Property.TSERV_CLIENTPORT.getKey());
+     mergePropWithRandomPort(siteConfig, Property.MONITOR_PORT.getKey());
+     mergePropWithRandomPort(siteConfig, Property.GC_PORT.getKey());
++    mergePropWithRandomPort(siteConfig, Property.MONITOR_LOG4J_PORT.getKey());
+     
+     // since there is a small amount of memory, check more frequently for majc... setting may not be needed in 1.5
+     appendProp(fileWriter, Property.TSERV_MAJC_DELAY, "3", siteConfig);
+
+
+######################## bugs-dot-jar_ACCUMULO-3218_1b35d263 ############################
+diff --git a/core/src/main/java/org/apache/accumulo/core/client/ClientConfiguration.java b/core/src/main/java/org/apache/accumulo/core/client/ClientConfiguration.java
+index b64fab4..17ad10b 100644
+--- a/core/src/main/java/org/apache/accumulo/core/client/ClientConfiguration.java
++++ b/core/src/main/java/org/apache/accumulo/core/client/ClientConfiguration.java
+@@ -107,6 +107,8 @@ public class ClientConfiguration extends CompositeConfiguration {
+ 
+   public ClientConfiguration(List<? extends Configuration> configs) {
+     super(configs);
++    // Don't do list interpolation
++    this.setListDelimiter('\0');
+   }
+ 
+   /**
+
+
+######################## bugs-dot-jar_ACCUMULO-3229_891584fb ############################
+diff --git a/core/src/main/java/org/apache/accumulo/core/util/shell/Shell.java b/core/src/main/java/org/apache/accumulo/core/util/shell/Shell.java
+index bb3c06e..fa0f5d4 100644
+--- a/core/src/main/java/org/apache/accumulo/core/util/shell/Shell.java
++++ b/core/src/main/java/org/apache/accumulo/core/util/shell/Shell.java
+@@ -493,7 +493,7 @@ public class Shell extends ShellOptions {
+     if (disableAuthTimeout)
+       sb.append("- Authorization timeout: disabled\n");
+     else
+-      sb.append("- Authorization timeout: ").append(String.format("%.2fs%n", TimeUnit.NANOSECONDS.toSeconds(authTimeout)));
++      sb.append("- Authorization timeout: ").append(String.format("%ds%n", TimeUnit.NANOSECONDS.toSeconds(authTimeout)));
+     sb.append("- Debug: ").append(isDebuggingEnabled() ? "on" : "off").append("\n");
+     if (!scanIteratorOptions.isEmpty()) {
+       for (Entry<String,List<IteratorSetting>> entry : scanIteratorOptions.entrySet()) {
+
+
+######################## bugs-dot-jar_ACCUMULO-3746_47c64d9a ############################
+diff --git a/core/src/main/java/org/apache/accumulo/core/client/ClientConfiguration.java b/core/src/main/java/org/apache/accumulo/core/client/ClientConfiguration.java
+index a926d35..7aab80c 100644
+--- a/core/src/main/java/org/apache/accumulo/core/client/ClientConfiguration.java
++++ b/core/src/main/java/org/apache/accumulo/core/client/ClientConfiguration.java
+@@ -302,8 +302,12 @@ public class ClientConfiguration extends CompositeConfiguration {
+   public Map<String,String> getAllPropertiesWithPrefix(ClientProperty property) {
+     checkType(property, PropertyType.PREFIX);
+ 
+-    Map<String,String> propMap = new HashMap<String,String>();
+-    Iterator<?> iter = this.getKeys(property.getKey());
++    Map<String,String> propMap = new HashMap<>();
++    String prefix = property.getKey();
++    if (prefix.endsWith(".")) {
++      prefix = prefix.substring(0, prefix.length() - 1);
++    }
++    Iterator<?> iter = this.getKeys(prefix);
+     while (iter.hasNext()) {
+       String p = (String) iter.next();
+       propMap.put(p, getString(p));
+
+
+######################## bugs-dot-jar_ACCUMULO-3897_699b8bf0 ############################
+diff --git a/server/master/src/main/java/org/apache/accumulo/master/tserverOps/ShutdownTServer.java b/server/master/src/main/java/org/apache/accumulo/master/tserverOps/ShutdownTServer.java
+index 11cd91b..171e312 100644
+--- a/server/master/src/main/java/org/apache/accumulo/master/tserverOps/ShutdownTServer.java
++++ b/server/master/src/main/java/org/apache/accumulo/master/tserverOps/ShutdownTServer.java
+@@ -58,6 +58,7 @@ public class ShutdownTServer extends MasterRepo {
+     // only send this request once
+     if (!requestedShutdown) {
+       master.shutdownTServer(server);
++      requestedShutdown = true;
+     }
+ 
+     if (master.onlineTabletServers().contains(server)) {
+
+
+######################## bugs-dot-jar_ACCUMULO-3945_36225565 ############################
+diff --git a/shell/src/main/java/org/apache/accumulo/shell/ShellOptionsJC.java b/shell/src/main/java/org/apache/accumulo/shell/ShellOptionsJC.java
+index 92ea1a5..01b7ce3 100644
+--- a/shell/src/main/java/org/apache/accumulo/shell/ShellOptionsJC.java
++++ b/shell/src/main/java/org/apache/accumulo/shell/ShellOptionsJC.java
+@@ -315,6 +315,11 @@ public class ShellOptionsJC {
+       clientConfig.withZkHosts(siteConf.get(Property.INSTANCE_ZK_HOST));
+     }
+ 
++    // If the user provided the hosts, set the ZK for tracing too
++    if (null != zooKeeperHosts) {
++      clientConfig.setProperty(ClientProperty.INSTANCE_ZK_HOST, zooKeeperHosts);
++    }
++
+     return clientConfig;
+   }
+ 
+
+
+######################## bugs-dot-jar_ACCUMULO-4029_5ca779a0 ############################
+diff --git a/core/src/main/java/org/apache/accumulo/core/data/Mutation.java b/core/src/main/java/org/apache/accumulo/core/data/Mutation.java
+index 5b052c3..e4e229c 100644
+--- a/core/src/main/java/org/apache/accumulo/core/data/Mutation.java
++++ b/core/src/main/java/org/apache/accumulo/core/data/Mutation.java
+@@ -598,7 +598,7 @@ public class Mutation implements Writable {
+ 
+   @Override
+   public int hashCode() {
+-    return toThrift(false).hashCode();
++    return serializedSnapshot().hashCode();
+   }
+ 
+   /**
+
+
+######################## bugs-dot-jar_ACCUMULO-4098_a2c2d38a ############################
+diff --git a/core/src/main/java/org/apache/accumulo/core/util/UnsynchronizedBuffer.java b/core/src/main/java/org/apache/accumulo/core/util/UnsynchronizedBuffer.java
+index 6947d64..f353613 100644
+--- a/core/src/main/java/org/apache/accumulo/core/util/UnsynchronizedBuffer.java
++++ b/core/src/main/java/org/apache/accumulo/core/util/UnsynchronizedBuffer.java
+@@ -118,8 +118,8 @@ public class UnsynchronizedBuffer {
+     }
+ 
+     public Reader(ByteBuffer buffer) {
+-      if (buffer.hasArray()) {
+-        offset = buffer.arrayOffset();
++      if (buffer.hasArray() && buffer.array().length == buffer.arrayOffset() + buffer.limit()) {
++        offset = buffer.arrayOffset() + buffer.position();
+         data = buffer.array();
+       } else {
+         data = new byte[buffer.remaining()];
+
+
+######################## bugs-dot-jar_ACCUMULO-4138_4d23d784 ############################
+diff --git a/core/src/main/java/org/apache/accumulo/core/util/shell/commands/OptUtil.java b/core/src/main/java/org/apache/accumulo/core/util/shell/commands/OptUtil.java
+index 432f17a..99e09e3 100644
+--- a/core/src/main/java/org/apache/accumulo/core/util/shell/commands/OptUtil.java
++++ b/core/src/main/java/org/apache/accumulo/core/util/shell/commands/OptUtil.java
+@@ -117,7 +117,7 @@ public abstract class OptUtil {
+   }
+ 
+   public static Option startRowOpt() {
+-    final Option o = new Option(START_ROW_OPT, "begin-row", true, "begin row (NOT) inclusive");
++    final Option o = new Option(START_ROW_OPT, "begin-row", true, "begin row (exclusive)");
+     o.setArgName("begin-row");
+     return o;
+   }
+
+
+######################## bugs-dot-jar_ACCUMULO-907_4aeaeb2a ############################
+diff --git a/core/src/main/java/org/apache/accumulo/core/iterators/Combiner.java b/core/src/main/java/org/apache/accumulo/core/iterators/Combiner.java
+index 6e72073..584eb14 100644
+--- a/core/src/main/java/org/apache/accumulo/core/iterators/Combiner.java
++++ b/core/src/main/java/org/apache/accumulo/core/iterators/Combiner.java
+@@ -63,7 +63,7 @@ public abstract class Combiner extends WrappingIterator implements OptionDescrib
+      */
+     public ValueIterator(SortedKeyValueIterator<Key,Value> source) {
+       this.source = source;
+-      topKey = source.getTopKey();
++      topKey = new Key(source.getTopKey());
+       hasNext = _hasNext();
+     }
+     
+

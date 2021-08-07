@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<subjects>	
+
+<!-- ACCUMULO, FROM 2011 TO 2016 -->
+	<subject name="accumulo_151">
+		<path>/src/core/src/main/java</path>
+		<root>workspace/bug_repair/bugs-dot-jar/accumulo/</root>
+	</subject>
+
+	<subject name="accumulo_907">
+		<path>/src/core/src/main/java</path>
+		<root>workspace/bug_repair/bugs-dot-jar/accumulo/</root>
+	</subject>
+	
+	<subject name="accumulo_1661">
+		<path>/src/core/src/main/java</path>
+		<root>workspace/bug_repair/bugs-dot-jar/accumulo/</root>
+	</subject>
+	
+	<subject name="accumulo_3746">
+		<path>/src/core/src/main/java</path>
+		<root>workspace/bug_repair/bugs-dot-jar/accumulo/</root>
+	</subject>
+	
+	<subject name="accumulo_4098">
+		<path>/src/core/src/main/java</path>
+		<root>workspace/bug_repair/bugs-dot-jar/accumulo/</root>
+	</subject>
+	
+<!-- CAMEL, FROM 2010 TO 2015 -->
+	<subject name="camel_3388">
+		<path>/src/main/java</path>
+		<root>workspace/bug_repair/bugs-dot-jar/camel/camel-core/</root>
+	</subject>
+
+	<subject name="camel_3690">
+		<path>/src/main/java</path>
+		<root>workspace/bug_repair/bugs-dot-jar/camel/camel-core/</root>
+	</subject>
+
+	<subject name="camel_5570">
+		<path>/src/main/java</path>
+		<root>workspace/bug_repair/bugs-dot-jar/camel/camel-core/</root>
+	</subject>
+
+	<subject name="camel_6987">
+		<path>/src/main/java</path>
+		<root>workspace/bug_repair/bugs-dot-jar/camel/camel-core/</root>
+	</subject>
+
+	<subject name="camel_7130">
+		<path>/src/main/java</path>
+		<root>workspace/bug_repair/bugs-dot-jar/camel/camel-core/</root>
+	</subject>
+
+	<subject name="camel_8584">
+		<path>/src/main/java</path>
+		<root>workspace/bug_repair/bugs-dot-jar/camel/camel-core/</root>
+	</subject>	
+</subjects>

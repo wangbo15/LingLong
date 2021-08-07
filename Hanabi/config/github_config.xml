@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<subjects>
+	<subject name="jdk7">
+		<path>/</path>
+		<root>workspace/gitrepos/jdk7/</root>
+	</subject>
+	
+	<subject name="jdk7_time">
+		<path>/</path>
+		<root>workspace/gitrepos/time_repative/jdk7_time</root>
+	</subject>
+	
+	<subject name="jdk7_math">
+		<path>/</path>
+		<root>workspace/gitrepos/math_relative/jdk7_math</root>
+	</subject>
+
+	<subject name="libgdx">
+		<path>/gdx/src</path>
+		<root>workspace/gitrepos/most_star/libgdx/</root>
+	</subject>
+	
+	<subject name="elasticsearch_core">
+		<path>src/main/java/</path>
+		<root>workspace/gitrepos/most_star/elasticsearch/modules/elasticsearch/</root>
+	</subject>
+	
+	<subject name="guava">
+		<path>/guava/src</path>
+		<root>workspace/gitrepos/most_star/guava/</root>
+	</subject>
+	
+	<subject name="leakcanary">
+		<path>/leakcanary-analyzer/src/main/java</path>
+		<root>workspace/gitrepos/most_star/leakcanary</root>
+	</subject>
+	
+	<subject name="okhttp">
+		<path>/okhttp/src/main/java</path>
+		<root>workspace/gitrepos/most_star/okhttp/</root>
+	</subject>
+	
+	<subject name="RxJava">
+		<path>/src/main/java</path>
+		<root>workspace/gitrepos/most_star/RxJava/</root>
+	</subject>
+	
+	<subject name="zxing">
+		<path>/core/src/main/java</path>
+		<root>workspace/gitrepos/most_star/zxing/</root>
+	</subject>
+	
+	<subject name="fastjson">
+		<path>/src/main/java</path>
+		<root>workspace/gitrepos/most_star/fastjson/</root>
+	</subject>
+
+	<subject name="dubbo">
+		<path>/dubbo-common/src/main/java</path>
+		<root>workspace/gitrepos/most_star/dubbo/</root>
+	</subject>
+
+	<subject name="retrofit">
+		<path>/retrofit/src/main/java</path>
+		<root>workspace/gitrepos/most_star/retrofit/</root>
+	</subject>
+	
+	<subject name="JSci">
+		<path>/</path>
+		<root>workspace/gitrepos/math_relative/JSci/</root>
+	</subject>
+	
+	
+</subjects>

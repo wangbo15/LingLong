@@ -1,0 +1,70 @@
+bugs-dot-jar_CAMEL-3388_0919a0f6 2010-12-05 10:44:58
+bugs-dot-jar_CAMEL-3690_2a3f3392 2011-02-21 09:18:48
+bugs-dot-jar_CAMEL-4388_f39bc60d 2011-08-27 16:27:33
+bugs-dot-jar_CAMEL-4474_06a8489a 2011-09-23 07:33:32
+bugs-dot-jar_CAMEL-4542_c408c3ed 2011-10-14 09:58:00
+bugs-dot-jar_CAMEL-4682_1e54865c 2011-11-15 13:14:52
+bugs-dot-jar_CAMEL-5570_a57830ed 2012-09-05 13:47:17
+bugs-dot-jar_CAMEL-5704_708e756d 2012-10-16 14:09:09
+bugs-dot-jar_CAMEL-5707_3f70d612 2012-10-17 15:57:56
+bugs-dot-jar_CAMEL-5720_4a05eccf 2012-10-20 10:09:41
+bugs-dot-jar_CAMEL-6987_37e0e6bb 2013-11-20 16:44:05
+bugs-dot-jar_CAMEL-7016_4ed448c7 2013-11-27 09:51:56
+bugs-dot-jar_CAMEL-7130_cc192f87 2014-01-22 15:57:23
+bugs-dot-jar_CAMEL-7125_6641f182 2014-02-07 17:01:22
+bugs-dot-jar_CAMEL-7209_5f78c646 2014-02-17 14:07:14
+bugs-dot-jar_CAMEL-7241_18c23fa8 2014-02-26 10:11:58
+bugs-dot-jar_CAMEL-7344_91228815 2014-04-07 14:42:35
+bugs-dot-jar_CAMEL-7359_9cb09d14 2014-04-12 12:15:49
+bugs-dot-jar_CAMEL-7459_57ba1bde 2014-05-23 08:58:42
+bugs-dot-jar_CAMEL-7611_e30f1c53 2014-07-20 08:54:45
+bugs-dot-jar_CAMEL-7448_35bde2b2 2014-08-26 15:57:39
+bugs-dot-jar_CAMEL-7795_19b2aa31 2014-09-10 09:56:34
+bugs-dot-jar_CAMEL-7883_d57f402b 2014-10-01 00:36:43
+bugs-dot-jar_CAMEL-7990_d581c4a4 2014-11-01 15:42:54
+bugs-dot-jar_CAMEL-8081_2e985f9b 2014-11-27 15:13:58
+bugs-dot-jar_CAMEL-8106_39ccf5d6 2014-12-02 16:55:47
+bugs-dot-jar_CAMEL-8584_dd0f74c0 2015-04-01 14:48:39
+bugs-dot-jar_CAMEL-8592_57f72cd9 2015-04-03 10:00:21
+bugs-dot-jar_CAMEL-9217_e7ac45b6 2015-10-17 09:49:16
+bugs-dot-jar_CAMEL-9243_1957a828 2015-10-24 15:59:01
+bugs-dot-jar_CAMEL-9238_169b981e 2015-10-27 11:52:30
+bugs-dot-jar_CAMEL-9269_62b2042b 2015-10-29 09:44:10
+bugs-dot-jar_CAMEL-9340_1cab39f6 2015-11-26 20:27:38
+
+>>>>>>>>>>>>>>>>>
+
+bugs-dot-jar_CAMEL-3388_0919a0f6
+bugs-dot-jar_CAMEL-3690_2a3f3392
+bugs-dot-jar_CAMEL-4388_f39bc60d
+bugs-dot-jar_CAMEL-4474_06a8489a
+bugs-dot-jar_CAMEL-4542_c408c3ed
+bugs-dot-jar_CAMEL-4682_1e54865c
+bugs-dot-jar_CAMEL-5570_a57830ed
+bugs-dot-jar_CAMEL-5704_708e756d
+bugs-dot-jar_CAMEL-5707_3f70d612
+bugs-dot-jar_CAMEL-5720_4a05eccf
+bugs-dot-jar_CAMEL-6987_37e0e6bb
+bugs-dot-jar_CAMEL-7016_4ed448c7
+bugs-dot-jar_CAMEL-7130_cc192f87
+bugs-dot-jar_CAMEL-7125_6641f182
+bugs-dot-jar_CAMEL-7209_5f78c646
+bugs-dot-jar_CAMEL-7241_18c23fa8
+bugs-dot-jar_CAMEL-7344_91228815
+bugs-dot-jar_CAMEL-7359_9cb09d14
+bugs-dot-jar_CAMEL-7459_57ba1bde
+bugs-dot-jar_CAMEL-7611_e30f1c53
+bugs-dot-jar_CAMEL-7448_35bde2b2
+bugs-dot-jar_CAMEL-7795_19b2aa31
+bugs-dot-jar_CAMEL-7883_d57f402b
+bugs-dot-jar_CAMEL-7990_d581c4a4
+bugs-dot-jar_CAMEL-8081_2e985f9b
+bugs-dot-jar_CAMEL-8106_39ccf5d6
+bugs-dot-jar_CAMEL-8584_dd0f74c0
+bugs-dot-jar_CAMEL-8592_57f72cd9
+
+#bugs-dot-jar_CAMEL-9217_e7ac45b6
+#bugs-dot-jar_CAMEL-9243_1957a828
+#bugs-dot-jar_CAMEL-9238_169b981e
+#bugs-dot-jar_CAMEL-9269_62b2042b
+#bugs-dot-jar_CAMEL-9340_1cab39f6
