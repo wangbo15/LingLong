@@ -51,4 +51,5 @@ We can also perform repair by JUnit tests.
 ### Generated patches
 
 The generated patches can be found in the folder [Patch](https://github.com/wangbo15/LingLong/tree/main/Patches).
+The analysis of the correctness/incorrectness of the patches can be found in `Readme.md`.
 
