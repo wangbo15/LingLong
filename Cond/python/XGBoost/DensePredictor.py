@@ -314,7 +314,7 @@ class DensePredictor:
             # nb, svm, dt, rf
             line = model.predict_proba(X)
             line = pd.Series(line[0])
-            # path = '/home/nightwish/tmp/pred.expr.csv'
+            # path = '/home/linglong/tmp/pred.expr.csv'
             # X.to_csv(path, sep='\t', header=True, index=False)
 
         top = self.configure.get_gen_expr_top()

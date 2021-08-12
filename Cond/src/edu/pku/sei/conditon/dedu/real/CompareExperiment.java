@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import edu.pku.sei.conditon.auxiliary.DollarilizeVisitor;
+import edu.pku.sei.conditon.dedu.DeduMain;
 import edu.pku.sei.conditon.dedu.extern.AbsInvoker;
 import edu.pku.sei.conditon.dedu.extern.SocketInvoker;
 import edu.pku.sei.conditon.dedu.pred.ExprPredItem;
@@ -14,11 +15,11 @@ import edu.pku.sei.conditon.util.FileUtil;
 public class CompareExperiment {
 	
 	private static String ORDER = "TD";
-	private static String OUTPUT_FILE = "/home/nightwish/tmp/" + ORDER.toLowerCase() + ".res.csv";
+	private static String OUTPUT_FILE = DeduMain.USER_HOME + "/tmp/" + ORDER.toLowerCase() + ".res.csv";
 	
 	public static void main(String[] args) {
 		
-		List<String> items = FileUtil.readFileToStringList("/home/nightwish/tmp/bu.pred.csv");
+		List<String> items = FileUtil.readFileToStringList(DeduMain.USER_HOME  + "/tmp/bu.pred.csv");
 		
 		
 		String projAndBug = "time_27";

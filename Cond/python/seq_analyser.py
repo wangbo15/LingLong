@@ -4,7 +4,7 @@ import numpy as np
 
 
 def analysis_seq():
-    base = '/home/nightwish/Documents/predall/time_27/'
+    base = '/home/linglong/Documents/predall/time_27/'
     td_path = base + 'td.beam.400.800-2020-08-05-14-10-07-seq.csv'
     bu_path = base + 'bu.beam.400.800-2020-08-05-21-37-26-seq.csv'
 

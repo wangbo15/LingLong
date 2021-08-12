@@ -270,7 +270,7 @@ class ExprWithPCA(PCAForXgb):
             model = self.train_xgb(X, Y, class_num)
         elif LEARNING_ALG == 'nb':
             # data = pd.concat([I, X, Y], axis=1)
-            # path = '/home/nightwish/tmp/' + self.__configure__.__direction__ + '.expr.csv'
+            # path = '/home/linglong/tmp/' + self.__configure__.__direction__ + '.expr.csv'
             # data.to_csv(path, sep='\t', header=True, index=False)
             model = self.train_naive_bayes(X, Y)
         elif LEARNING_ALG == 'svm':

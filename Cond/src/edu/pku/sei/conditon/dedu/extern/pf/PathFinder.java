@@ -11,6 +11,7 @@ import java.util.TreeSet;
 
 import edu.pku.sei.conditon.auxiliary.DollarilizeVisitor;
 import edu.pku.sei.conditon.dedu.DeduFeatureGenerator;
+import edu.pku.sei.conditon.dedu.DeduMain;
 import edu.pku.sei.conditon.dedu.extern.AbsInvoker;
 import edu.pku.sei.conditon.dedu.extern.Predictor;
 import edu.pku.sei.conditon.dedu.pf.Path;
@@ -55,20 +56,37 @@ public abstract class PathFinder extends Predictor{
 	protected int compileTime = 0;
 	protected int compileFailingTime = 0;
 	
-	private static final String LANG_65_CLS_PATH = "/home/nightwish/workspace/defects4j/src/lang/lang_65_buggy/target/classes:/home/nightwish/workspace/defects4j/src/lang/lang_65_buggy/target/tests:/home/nightwish/workspace/defects4j/framework/projects/Lang/lib/commons-io.jar:/home/nightwish/workspace/defects4j/framework/projects/Lang/lib/easymock.jar";
-	private static final String MATH_106_CLS_PATH = "/home/nightwish/workspace/defects4j/src/math/math_106_buggy/target/classes:/home/nightwish/workspace/defects4j/src/math/math_106_buggy/target/test-classes:/home/nightwish/workspace/defects4j/framework/projects/Math/lib/commons-discovery-0.5.jar";
-	private static final String CHART_26_CLS_PATH = "/home/nightwish/workspace/defects4j/src/chart/chart_26_buggy/build/:/home/nightwish/workspace/defects4j/src/chart/chart_26_buggy/build-tests/";
-	private static final String TIME_27_CLS_PATH = "/home/nightwish/workspace/defects4j/src/time/time_27_buggy/build/classes:/home/nightwish/workspace/defects4j/src/time/time_27_buggy/build/tests:/home/nightwish/workspace/defects4j/framework/projects/Time/lib/joda-convert-1.2.jar";
+	private static final String D4J_FRAME_BASE = DeduMain.USER_HOME + "/workspace/defects4j/framework/projects";
 	
-	private static final String LANG_65_ROOT = "/home/nightwish/workspace/defects4j/src/lang/lang_65_buggy/";
-	private static final String MATH_106_ROOT = "/home/nightwish/workspace/defects4j/src/math/math_106_buggy/";
-	private static final String CHART_26_ROOT = "/home/nightwish/workspace/defects4j/src/chart/chart_26_buggy/";
-	private static final String TIME_27_ROOT = "/home/nightwish/workspace/defects4j/src/time/time_27_buggy/";
+	private static final String LANG_BASE = DeduMain.USER_HOME + "/workspace/defects4j/src/lang";
+	private static final String LANG_65_CLS_PATH = LANG_BASE + "/lang_65_buggy/target/classes:"
+			+ LANG_BASE + "/lang_65_buggy/target/tests:"
+			+ D4J_FRAME_BASE + "/Lang/lib/commons-io.jar:"
+			+ D4J_FRAME_BASE + "/Lang/lib/easymock.jar";
 	
-	private static final String LANG_65_TARGET = "/home/nightwish/workspace/defects4j/src/lang/lang_65_buggy/target/classes/";
-	private static final String MATH_106_TARGET = "/home/nightwish/workspace/defects4j/src/math/math_106_buggy/target/classes/";
-	private static final String CHART_26_TARGET = "/home/nightwish/workspace/defects4j/src/chart/chart_26_buggy/build/";
-	private static final String TIME_27_TARGET = "/home/nightwish/workspace/defects4j/src/time/time_27_buggy/build/classes/";
+	private static final String MATH_BASE = DeduMain.USER_HOME + "/workspace/defects4j/src/math";
+	private static final String MATH_106_CLS_PATH = MATH_BASE + "/math_106_buggy/target/classes:"
+			+ MATH_BASE + "/math_106_buggy/target/test-classes:"
+			+ D4J_FRAME_BASE + "/Math/lib/commons-discovery-0.5.jar";
+	
+	private static final String CHART_BASE = DeduMain.USER_HOME + "/workspace/defects4j/src/chart";
+	private static final String CHART_26_CLS_PATH = CHART_BASE + "/chart_26_buggy/build/:"
+			+ CHART_BASE + "/chart_26_buggy/build-tests/";
+	
+	private static final String TIME_BASE = DeduMain.USER_HOME + "/workspace/defects4j/src/time";
+	private static final String TIME_27_CLS_PATH = TIME_BASE + "/time_27_buggy/build/classes:"
+			+ TIME_BASE + "/time_27_buggy/build/tests:"
+			+ D4J_FRAME_BASE + "/Time/lib/joda-convert-1.2.jar";
+	
+	private static final String LANG_65_ROOT = LANG_BASE + "/lang_65_buggy/";
+	private static final String MATH_106_ROOT = MATH_BASE + "/math_106_buggy/";
+	private static final String CHART_26_ROOT = CHART_BASE + "/chart_26_buggy/";
+	private static final String TIME_27_ROOT = TIME_BASE + "/time_27_buggy/";
+	
+	private static final String LANG_65_TARGET = LANG_BASE + "/lang_65_buggy/target/classes/";
+	private static final String MATH_106_TARGET = MATH_BASE + "/math_106_buggy/target/classes/";
+	private static final String CHART_26_TARGET = CHART_BASE + "/chart_26_buggy/build/";
+	private static final String TIME_27_TARGET = TIME_BASE + "/time_27_buggy/build/classes/";
 
 	
 	public PathFinder(String projAndBug, String srcRoot, String testRoot, String filePath,

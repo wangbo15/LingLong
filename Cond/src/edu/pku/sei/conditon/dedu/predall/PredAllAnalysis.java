@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import edu.pku.sei.conditon.dedu.DeduMain;
 import edu.pku.sei.conditon.dedu.extern.AbsInvoker;
 import edu.pku.sei.conditon.util.FileUtil;
 import edu.pku.sei.conditon.util.Pair;
@@ -30,7 +31,7 @@ public class PredAllAnalysis {
 	}
 	
 	private static Map<Integer, Pair<String, Integer>> loadCmd(String bugName){
-		String cmdFilePath = "/home/nightwish/tmp/res/real/" + bugName + ".cmd.txt";
+		String cmdFilePath = DeduMain.USER_HOME + "/tmp/res/real/" + bugName + ".cmd.txt";
 		List<String> lines = FileUtil.readFileToStringList(cmdFilePath);
 		
 		Map<Integer, Pair<String, Integer>> result = new HashMap<>();
@@ -116,7 +117,7 @@ public class PredAllAnalysis {
 	}
 
 	private static Map<String, String> loadFullOracle(String bugName) {
-		String path = "/home/nightwish/tmp/res/" + bugName + ".full.csv";
+		String path = DeduMain.USER_HOME + "/tmp/res/" + bugName + ".full.csv";
 		List<String> lines = FileUtil.readFileToStringList(path);
 		
 		Map<String, String> result = new HashMap<>();

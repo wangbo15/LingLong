@@ -8,6 +8,8 @@ import java.io.IOException;
 import com.csvreader.CsvReader;
 import com.csvreader.CsvWriter;
 
+import edu.pku.sei.conditon.dedu.DeduMain;
+
 public class DimensionDescender {
 	
 	
@@ -65,7 +67,7 @@ public class DimensionDescender {
 	}
 	
 	public static void main(String[] args){
-		String outRootPath = "/home/nightwish/tmp/res/encode/";
+		String outRootPath = DeduMain.USER_HOME + "/tmp/res/encode/";
 
 		String readerPath = outRootPath + "math_3_buggy.csv";
 		

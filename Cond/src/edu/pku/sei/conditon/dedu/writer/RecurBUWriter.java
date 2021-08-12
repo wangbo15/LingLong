@@ -33,7 +33,7 @@ import edu.pku.sei.conditon.util.csv.CSVChecker;
  * Step 5: predict e1
  * Step 6: predict v1
  * 
- * @author nightwish
+ * @author Wang Bo
  *
  */
 public class RecurBUWriter extends Writer {

@@ -12,6 +12,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import edu.pku.sei.conditon.dedu.DeduMain;
+
 /**
  * Copyright 2017 PLDE, PKU. All right reserved.
  * @author Wang Bo
@@ -223,28 +225,30 @@ public class CommitResoter {
 		}
 	}
 	
+	private final static String D4J_PROJ = DeduMain.USER_HOME + "/workspace/defects4j/framework/projects";
+	
 	public static void main(String[] args){
 		
-		String chartDB = "/home/nightwish/workspace/defects4j/framework/projects/Chart/commit-db";
-		String chartLog = "/home/nightwish/workspace/real_repos/jfreechart.log";
+		String chartDB = D4J_PROJ + "/Chart/commit-db";
+		String chartLog = DeduMain.USER_HOME + "/workspace/real_repos/jfreechart.log";
 		sortSvnBug("Chart", chartDB, chartLog);
 		
 		System.out.println();
 		
-		String mathDB = "/home/nightwish/workspace/defects4j/framework/projects/Math/commit-db";
-		String mathLog = "/home/nightwish/workspace/real_repos/math.log";
+		String mathDB = D4J_PROJ + "/Math/commit-db";
+		String mathLog = DeduMain.USER_HOME + "/workspace/real_repos/math.log";
 		sortGitBug("Math", mathDB, mathLog);
 		
 		System.out.println();
 		
-		String timeDB = "/home/nightwish/workspace/defects4j/framework/projects/Time/commit-db";
-		String timeLog = "/home/nightwish/workspace/real_repos/time.log";
+		String timeDB = D4J_PROJ + "/Time/commit-db";
+		String timeLog = DeduMain.USER_HOME + "/workspace/real_repos/time.log";
 		sortGitBug("Time", timeDB, timeLog);
 	
 		System.out.println();
 		
-		String langDB = "/home/nightwish/workspace/defects4j/framework/projects/Lang/commit-db";
-		String langLog = "/home/nightwish/workspace/real_repos/lang.log";
+		String langDB = D4J_PROJ + "/Lang/commit-db";
+		String langLog = DeduMain.USER_HOME + "/workspace/real_repos/lang.log";
 		sortGitBug("Lang", langDB, langLog);
 	}
 

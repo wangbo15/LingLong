@@ -50,7 +50,7 @@ import edu.pku.sei.proj.ProInfo;
 /**
  * Statistic times in conditions
  * Collect Constants for the src file
- * @author nightwish
+ * @author Wang Bo
  *
  */
 public class StatisticVisitor  extends AbstractDeduVisitor{

@@ -32,11 +32,13 @@ public class DeduMain {
 	
 	private static Logger logger = Logger.getLogger(DeduMain.class);
 	
-	//TODO: move to configfile
-	public static final String DEFECTS4J_ROOT = "/home/nightwish/workspace/defects4j/src/";
+	public static final String USER_HOME = System.getProperties().getProperty("user.home");
+	
+	//TODO: move to config file
+	public static final String DEFECTS4J_ROOT = USER_HOME + "/workspace/defects4j/src/";
 				
-	public static final String OUTPUT_ROOT = "/home/nightwish/tmp/res/";
-	public static final String TEST_OUTPUT_ROOT = "/home/nightwish/tmp/test/";
+	public static final String OUTPUT_ROOT = USER_HOME + "/tmp/res/";
+	public static final String TEST_OUTPUT_ROOT = USER_HOME + "/tmp/test/";
 	
 	private static String subjectSrcPath = "";
 	
@@ -316,9 +318,6 @@ public class DeduMain {
 			String filePath = System.getProperty("user.home") + "/" + subject.getRoot() + subject.getPath();
 			subjectSrcPath = filePath;
 			
-			//for debug
-//			filePath = "/home/nightwish/workspace/analogic_projects/jdk_1.7/java/awt/image/AreaAveragingScaleFilter.java";
-
 			ArrayList<File> srcFileList = new ArrayList<File>(500);
 			
 			SubjectsUtil.getFileList(filePath, srcFileList);

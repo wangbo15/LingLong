@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 
 import com.csvreader.CsvReader;
 
+import edu.pku.sei.conditon.dedu.DeduMain;
 import edu.pku.sei.conditon.util.StringUtil;
 
 /**
@@ -204,7 +205,7 @@ public class ExprNormalization {
 	}
 	
 	public static void main(String[] args){
-		int allLine = collectAllExprOfFile("/home/nightwish/tmp/res/math_37.expr.csv");
+		int allLine = collectAllExprOfFile(DeduMain.USER_HOME + "/tmp/res/math_37.expr.csv");
 		DecimalFormat df = new DecimalFormat("#.##");
 		System.out.println(allExprSet.size() + " / " + allLine + " = " + df.format((double)allExprSet.size()/allLine));
 		System.out.println(allNormalizedExprSet.size() + " / " + allExprSet.size());

@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import edu.pku.sei.conditon.dedu.DeduMain;
 import edu.pku.sei.conditon.dedu.pred.ExprGenerator;
 import edu.pku.sei.conditon.dedu.pred.ExprPredItem;
 import edu.pku.sei.conditon.dedu.pred.GenExprItem;
@@ -27,7 +28,7 @@ import edu.pku.sei.conditon.util.Pair;
 import edu.pku.sei.conditon.util.StringUtil;
 
 public abstract class AbsInvoker {
-	public static final String PREDICTOR_ROOT = "/home/nightwish/workspace/eclipse/Condition/python/";
+	public static final String PREDICTOR_ROOT = DeduMain.USER_HOME + "/workspace/eclipse/Condition/python/";
 	
 	protected static final ConditionConfig CONFIG = ConditionConfig.getInstance();
 	

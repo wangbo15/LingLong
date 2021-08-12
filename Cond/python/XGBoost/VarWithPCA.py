@@ -238,9 +238,9 @@ class VarWithPCA(PCAForXgb):
         elif LEARNING_ALG == 'nb':
             # data = pd.concat([I, X, Y], axis=1)
             # if is_v0:
-            #     path = '/home/nightwish/tmp/' + self.__configure__.__direction__ + '.v0.csv'
+            #     path = '/home/linglong/tmp/' + self.__configure__.__direction__ + '.v0.csv'
             # else:
-            #     path = '/home/nightwish/tmp/' + self.__configure__.__direction__ + '.var.csv'
+            #     path = '/home/linglong/tmp/' + self.__configure__.__direction__ + '.var.csv'
             # data.to_csv(path, sep='\t', header=True, index=False)
             model = self.train_naive_bayes(X, Y)
         elif LEARNING_ALG == 'svm':

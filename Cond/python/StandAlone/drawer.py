@@ -110,7 +110,7 @@ def draw_fig_by_search_set(sig2fn):
     plt.xlabel("Time (s)")
     plt.legend(['BM.25', 'BM.100', 'BM.400', 'DJ'])
     plt.grid(True)
-    plt.savefig('/home/nightwish/search.eps')
+    plt.savefig('/home/linglong/search.eps')
     plt.show()
 
 
@@ -150,7 +150,7 @@ def draw_fig_by_rule_set(sig2fn):
     plt.xlabel("Time (s)")
     plt.legend(['BU', 'TD', 'RECUR'])
     plt.grid(True)
-    plt.savefig('/home/nightwish/rule.eps')
+    plt.savefig('/home/linglong/rule.eps')
     plt.show()
 
 

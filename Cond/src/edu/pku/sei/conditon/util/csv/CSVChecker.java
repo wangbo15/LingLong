@@ -11,9 +11,11 @@ import edu.pku.sei.conditon.util.SubjectsUtil;
 
 public class CSVChecker {
 	
-//	public static void main(String[] args){
-//		checkAllCSV("/home/nightwish/tmp/res/math_3.var.csv");
-//	}
+	public static void main(String[] args){
+		assert args.length == 1;
+		String input = args[0];
+		checkAllCSV(input);
+	}
 	
 	public static boolean checkAllCSV(String... paths){
 		boolean res = true;

@@ -6,7 +6,7 @@ import edu.pku.sei.conditon.dedu.feature.ContextFeature;
 
 /**
  * Tree is an inmutable data structure. 
- * @author nightwish
+ * @author Wang Bo
  *
  * @param <T>
  */

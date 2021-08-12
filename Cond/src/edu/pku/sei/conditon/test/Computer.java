@@ -54,7 +54,7 @@ public class Computer {
 	}
 	
 	public static void main(String[] args) {
-		String path = "/home/nightwish/chart_expr";
+		String path = "/home/linglong/chart_expr";
 		process(path);
 	}
 }

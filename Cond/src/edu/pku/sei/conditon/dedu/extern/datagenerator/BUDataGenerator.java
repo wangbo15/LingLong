@@ -59,9 +59,7 @@ public class BUDataGenerator extends DataGenerator {
 		exprFeatures.add(exprLine);
 		
 		assert checkLines(exprFeatures.subList(1, exprFeatures.size()));
-		
-		//FileUtil.writeStringToFile("/home/nightwish/tmp/bu.pred.csv", exprLine + "\n", true);
-		
+				
 		predictTime++;
 		exprPredictTime++;
 		

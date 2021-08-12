@@ -36,7 +36,7 @@ public class PredAllExperiment {
 	
 	private static final boolean BOTTOM_UP = CONFIG.isBottomUp();
 	
-	public static final String REPORT_PATH = "/home/nightwish/cond-report.txt";
+	public static final String REPORT_PATH = DeduMain.USER_HOME + "/cond-report.txt";
 	public static final String ALL_RES_POSTFIX = "allres.txt";
 	public static final String RANKING_POSTFIX = "ranking.csv";
 	public static final String TIME_POSTFIX = "time.txt";
@@ -100,7 +100,7 @@ public class PredAllExperiment {
 	}
 	
 	public static String getRecordFilePath(String bugName, String postFix) {
-		String path = "/home/nightwish/Documents/predall/" + bugName + "/" + prefix + "-";
+		String path = DeduMain.USER_HOME + "/Documents/predall/" + bugName + "/" + prefix + "-";
 		path += DateUtil.getFormatedDateForFileName(startDate) + "-" + postFix;
 		File f = new File(path);
 		File p = f.getParentFile();

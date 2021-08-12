@@ -27,5 +27,5 @@ if __name__ == '__main__':
 
     # token_file = sys.argv[1]
 
-    token_file = '/home/nightwish/tmp/res/math_37.token.txt'
+    token_file = '/home/linglong/tmp/res/math_37.token.txt'
     train_word2vec(token_file)

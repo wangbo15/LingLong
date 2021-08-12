@@ -22,7 +22,7 @@ def get_expr(fn):
 
 
 def compare_td_bu_expr_data():
-    prefix = '/home/nightwish/workspace/eclipse/Condition/python/input/time/time_27/expr/'
+    prefix = '/home/linglong/workspace/eclipse/Condition/python/input/time/time_27/expr/'
     bu = get_expr(prefix + 'time_27.expr.csv')
     td = get_expr(prefix + 'time_27.topdown.expr.csv')
 
@@ -45,11 +45,11 @@ def compare_td_bu_expr_data():
 
 def get_training_data_with(y):
     # 101 $ <= 0	1.00000000000000000
-    path = '/home/nightwish/tmp/top_down.expr.csv'
+    path = '/home/linglong/tmp/top_down.expr.csv'
     data = pd.read_csv(path, sep='\t', header=0, encoding='utf-8')
     targets = data.loc[data['pred'] == y]
 
-    path = '/home/nightwish/tmp/top_down.filter.expr.csv'
+    path = '/home/linglong/tmp/top_down.filter.expr.csv'
     targets.to_csv(path, sep='\t', header=True, index=False)
 
 

@@ -15,8 +15,8 @@ import edu.pku.sei.conditon.util.SubjectsUtil;
 public class Encoder {
 	
 	public static void main(String[] args){
-		String src = "/home/nightwish/tmp/res/math_3_buggy.csv";
-		String out = "/home/nightwish/tmp/res/encode/";
+		String src = "/home/linglong/tmp/res/math_3_buggy.csv";
+		String out = "/home/linglong/tmp/res/encode/";
 		String fname = "math_3_buggy.csv";
 		csvEncode(src, out);
 	}

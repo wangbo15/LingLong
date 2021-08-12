@@ -66,7 +66,7 @@ def analysis_ranking(prefix):
 
 
 if __name__ == '__main__':
-    prefix = '/home/nightwish/Documents/predall/time_27/'
+    prefix = '/home/linglong/Documents/predall/time_27/'
 
     # analysis_ranking(prefix)
 
