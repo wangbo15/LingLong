@@ -29,7 +29,7 @@ public class CmdUtilTest {
 	 */
 	@Test
 	public void testRunByJava7_math_3() {
-		File math3 = new File("/home/nightwish/workspace/bug_repair/tmp/Math_3/");		
+		File math3 = new File(Config.D4J_SRC_ROOT + "math/math_3_buggy");		
 		CmdUtil.runCmd("git checkout .", math3);
 		
 		// if run by java 7, there is only one failure

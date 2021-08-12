@@ -8,7 +8,7 @@ import java.util.Map;
 import cn.edu.pku.sei.plde.hanabi.fl.asm.metric.Metric;
 /**
  * Representing a statement, collected by line number.
- * @author nightwish
+ * @author Bo Wang
  *
  */
 public class FLStmt {

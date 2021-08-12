@@ -1,23 +1,26 @@
 package cn.edu.pku.sei.plde.hanabi.main;
 
 public class Config {
-	//TODO:: move to file
-	public static final String FIXER_ROOT_PATH = "/home/nightwish/workspace/eclipse/Hanabi/";
 	
-	public static final String D4J_ROOT = "/home/nightwish/workspace/defects4j/";
+	public static final String USER_HOME = System.getProperties().getProperty("user.home");
+
+	//TODO:: move to file
+	public static final String FIXER_ROOT_PATH = USER_HOME + "/workspace/eclipse/Hanabi/";
+	
+	public static final String D4J_ROOT = USER_HOME + "/workspace/defects4j/";
 	
 	public static final String D4J_SRC_ROOT = D4J_ROOT + "src/";
 
-	public static final String BUGS_DOT_JAR_ROOT = "/home/nightwish/workspace/gitrepos/apache/";
-			//"/home/nightwish/workspace/bug_repair/bugs-dot-jar/";
+	public static final String BUGS_DOT_JAR_ROOT = USER_HOME + "/workspace/gitrepos/apache/";
+			// USER_HOME + "workspace/bug_repair/bugs-dot-jar/";
 	
     public static final String RESULT_PATH = FIXER_ROOT_PATH + "resultMessage";
     public static final String PATCH_SOURCE_PATH = RESULT_PATH + "/patchSource";
     
     public static final String FIX_TIEM_LOG_FILE_PATH = RESULT_PATH + "/used_time.log";
 	
-	public static final String JAVA7_PATH = "/home/nightwish/program_files/jdk1.7.0_79/bin/";
-    public static final String PREDICTOR_OUT_ROOT = "/home/nightwish/workspace/eclipse/Condition/python/output/";
+	public static final String JAVA7_PATH = USER_HOME + "/program_files/jdk1.7.0_79/bin/";
+    public static final String PREDICTOR_OUT_ROOT = USER_HOME + "/workspace/eclipse/Condition/python/output/";
     
     public static final String TEMP_FILES_PATH = ".temp/";
     

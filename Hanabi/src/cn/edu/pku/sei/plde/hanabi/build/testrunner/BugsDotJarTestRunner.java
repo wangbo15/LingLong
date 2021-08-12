@@ -244,7 +244,7 @@ public class BugsDotJarTestRunner extends TestRunner {
 	}
 	
 //	public static void main(String[] args) {
-//		File folder = new File("/home/nightwish/workspace/bug_repair/bugs-dot-jar/camel/camel-core/target/surefire-reports/");
+//		File folder = new File("/home/linglong/workspace/bug_repair/bugs-dot-jar/camel/camel-core/target/surefire-reports/");
 //		List<TestOutput> results = processFolder(folder);
 //		
 //		System.out.println(results.size());

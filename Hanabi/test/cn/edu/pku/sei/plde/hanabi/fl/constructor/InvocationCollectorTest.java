@@ -17,6 +17,7 @@ import cn.edu.pku.sei.plde.hanabi.build.proj.ProjectConfig;
 import cn.edu.pku.sei.plde.hanabi.build.proj.ProjectConfigFactory;
 import cn.edu.pku.sei.plde.hanabi.build.proj.ProjectConfigFactory.BugType;
 import cn.edu.pku.sei.plde.hanabi.fl.constructor.InvocationCollector;
+import cn.edu.pku.sei.plde.hanabi.main.Config;
 import cn.edu.pku.sei.plde.hanabi.utils.FileUtil;
 import cn.edu.pku.sei.plde.hanabi.utils.Pair;
 import edu.pku.sei.conditon.util.JavaFile;
@@ -37,7 +38,7 @@ public class InvocationCollectorTest {
 	public void setUp() throws Exception {
 		BugType projType = BugType.D4J_TYPE;
 		String projName = "math_35";
-		String root = "/home/nightwish/workspace/defects4j/src/math/" + projName + "_buggy/";
+		String root = Config.D4J_SRC_ROOT + "math/" + projName + "_buggy/";
 		projectConfig = ProjectConfigFactory.createPorjectConfig(projType, projName, root);
 	}
 	@After

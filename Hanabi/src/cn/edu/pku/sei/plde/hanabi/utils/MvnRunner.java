@@ -10,6 +10,8 @@ import org.apache.maven.shared.invoker.InvocationResult;
 import org.apache.maven.shared.invoker.Invoker;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 
+import cn.edu.pku.sei.plde.hanabi.main.Config;
+
 public class MvnRunner {
 	
 	public static class MvnLifeCycle{
@@ -29,7 +31,7 @@ public class MvnRunner {
 	}
 	
 	
-	private final File mvnHome = new File("/home/nightwish/program_files/apache-maven-3.5.0/");
+	private final File mvnHome = new File(Config.USER_HOME + "/program_files/apache-maven-3.5.0/");
 	
 	private InvocationRequest request;
 	private Invoker invoker;

@@ -11,6 +11,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import cn.edu.pku.sei.plde.hanabi.main.Config;
+
 public class CmdUtil {
 	
 	private final static int BUFFER_SIZE = 1024 * Byte.SIZE;
@@ -36,10 +38,10 @@ public class CmdUtil {
 			final String del = ":";
 
 			// TODO:: move to config file
-			env.put("JAVA_HOME", "/home/nightwish/program_files/jdk1.7.0_79/");
-			env.put("ANT_HOME", "/home/nightwish/program_files/apache-ant-1.9.13/");
-			env.put("D4J_HOME", "/home/nightwish/workspace/defects4j/framework/");
-			env.put("MAVEN_HOME", "/home/nightwish/program_files/apache-maven-3.5.0/");
+			env.put("JAVA_HOME", Config.USER_HOME + "program_files/jdk1.7.0_79/");
+			env.put("ANT_HOME", Config.USER_HOME + "program_files/apache-ant-1.9.13/");
+			env.put("D4J_HOME", Config.D4J_ROOT + "framework/");
+			env.put("MAVEN_HOME", Config.USER_HOME + "program_files/apache-maven-3.5.0/");
 			env.put("CLASSPATH", "." + del + env.get("JAVA_HOME") + "lib");
 
 			String orcPath = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin";

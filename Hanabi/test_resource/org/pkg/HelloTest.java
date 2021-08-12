@@ -13,16 +13,16 @@ import org.junit.Test;
  * Hanabi/test_resource/
  * 
  * How to compile: 
- * javac -cp /home/nightwish/program_files/eclipse/plugins/org.junit_4.12.0.v201504281640/junit.jar:. -g ./org/pkg/HelloTest.java
+ * javac -cp ${HOME}/program_files/eclipse/plugins/org.junit_4.12.0.v201504281640/junit.jar:. -g ./org/pkg/HelloTest.java
  *
  * IN DELL:
- * javac -cp .:/home/nightwish/program_files/eclipse-jee-oxygen/plugins/org.junit_4.12.0.v201504281640/junit.jar:/home/nightwish/program_files/eclipse-jee-oxygen/plugins/org.hamcrest.core_1.3.0.v201303031735.jar  org/pkg/HelloTest.java
+ * javac -cp .:${HOME}/program_files/eclipse-jee-oxygen/plugins/org.junit_4.12.0.v201504281640/junit.jar:${HOME}/program_files/eclipse-jee-oxygen/plugins/org.hamcrest.core_1.3.0.v201303031735.jar  org/pkg/HelloTest.java
  * 
  * How to run test:
- * java -cp .:/home/nightwish/program_files/eclipse/plugins/org.junit_4.12.0.v201504281640/junit.jar:/home/nightwish/program_files/eclipse/plugins/org.hamcrest.core_1.3.0.v201303031735.jar org.junit.runner.JUnitCore org.pkg.HelloTest
+ * java -cp .:${HOME}/program_files/eclipse/plugins/org.junit_4.12.0.v201504281640/junit.jar:${HOME}/program_files/eclipse/plugins/org.hamcrest.core_1.3.0.v201303031735.jar org.junit.runner.JUnitCore org.pkg.HelloTest
  * 
  * IN DELL:
- * java -cp .:/home/nightwish/workspace/eclipse/Hanabi/bin/:/home/nightwish/program_files/eclipse-jee-oxygen/plugins/org.junit_4.12.0.v201504281640/junit.jar:/home/nightwish/program_files/eclipse-jee-oxygen/plugins/org.hamcrest.core_1.3.0.v201303031735.jar -XX:-UseSplitVerifier org.junit.runner.JUnitCore org.pkg.HelloTest
+ * java -cp .:${HOME}/workspace/eclipse/Hanabi/bin/:${HOME}/program_files/eclipse-jee-oxygen/plugins/org.junit_4.12.0.v201504281640/junit.jar:${HOME}/program_files/eclipse-jee-oxygen/plugins/org.hamcrest.core_1.3.0.v201303031735.jar -XX:-UseSplitVerifier org.junit.runner.JUnitCore org.pkg.HelloTest
  */
 public class HelloTest {
 

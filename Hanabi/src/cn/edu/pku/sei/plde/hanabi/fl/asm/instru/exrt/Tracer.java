@@ -18,7 +18,8 @@ public class Tracer {
 	
 	private static final boolean DEFAULT_PASSED = true;
 	
-	public final static File DUMP_FOLDER = new File("/home/nightwish/workspace/eclipse/Hanabi/.temp/asm/");
+	
+	public final static File DUMP_FOLDER = new File("/.temp/asm/");
 
 	private static boolean passed = DEFAULT_PASSED;
 	

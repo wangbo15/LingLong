@@ -17,6 +17,7 @@ import cn.edu.pku.sei.plde.hanabi.fl.FaultLocation;
 import cn.edu.pku.sei.plde.hanabi.fl.GZoltarFaultLocation;
 import cn.edu.pku.sei.plde.hanabi.fl.OffTheShellFL;
 import cn.edu.pku.sei.plde.hanabi.fl.Suspect;
+import cn.edu.pku.sei.plde.hanabi.main.Config;
 
 public class FaultLocationTest {
 
@@ -40,7 +41,7 @@ public class FaultLocationTest {
 	public void testOffTheShellFL() {
 		BugType projType = BugType.D4J_TYPE;
 		String projName = "math_82";
-		String root = "/home/nightwish/workspace/defects4j/src/math/" + projName + "_buggy/";
+		String root = Config.D4J_SRC_ROOT + "/math/" + projName + "_buggy/";
 		ProjectConfig projectConfig = ProjectConfigFactory.createPorjectConfig(projType, projName, root);
 		
 		FaultLocation fl = new OffTheShellFL(projectConfig);
@@ -56,7 +57,7 @@ public class FaultLocationTest {
 	public void testGZoltarFaultLocation() {
 		BugType projType = BugType.D4J_TYPE;
 		String projName = "math_46";
-		String root = "/home/nightwish/workspace/defects4j/src/math/" + projName + "_buggy/";
+		String root = Config.D4J_SRC_ROOT + "/math/" + projName + "_buggy/";
 		ProjectConfig projectConfig = ProjectConfigFactory.createPorjectConfig(projType, projName, root);
 		
 		FaultLocation fl = new GZoltarFaultLocation(projectConfig);
@@ -74,7 +75,7 @@ public class FaultLocationTest {
 	public void testGZoltarFaultLocation_Math26() {
 		BugType projType = BugType.D4J_TYPE;
 		String projName = "math_26";
-		String root = "/home/nightwish/workspace/defects4j/src/math/" + projName + "_buggy/";
+		String root = Config.D4J_SRC_ROOT + "/math/" + projName + "_buggy/";
 		ProjectConfig projectConfig = ProjectConfigFactory.createPorjectConfig(projType, projName, root);
 		
 //		FaultLocation fl = new OffTheShellFL(projectConfig);
@@ -99,7 +100,7 @@ public class FaultLocationTest {
 	public void testOffTheShellFL_Math35() {
 		BugType projType = BugType.D4J_TYPE;
 		String projName = "math_35";
-		String root = "/home/nightwish/workspace/defects4j/src/math/" + projName + "_buggy/";
+		String root = Config.D4J_SRC_ROOT + "/math/" + projName + "_buggy/";
 		ProjectConfig projectConfig = ProjectConfigFactory.createPorjectConfig(projType, projName, root);
 		
 		FaultLocation fl = new OffTheShellFL(projectConfig);
@@ -125,7 +126,7 @@ public class FaultLocationTest {
 	public void testGZoltarFaultLocation_Math35() {
 		BugType projType = BugType.D4J_TYPE;
 		String projName = "math_35";
-		String root = "/home/nightwish/workspace/defects4j/src/math/" + projName + "_buggy/";
+		String root = Config.D4J_SRC_ROOT + "/math/" + projName + "_buggy/";
 		ProjectConfig projectConfig = ProjectConfigFactory.createPorjectConfig(projType, projName, root);
 		
 		FaultLocation fl = new GZoltarFaultLocation(projectConfig);
@@ -157,7 +158,7 @@ public class FaultLocationTest {
 	public void testOffTheShellFL_Math4() {
 		BugType projType = BugType.D4J_TYPE;
 		String projName = "math_4";
-		String root = "/home/nightwish/workspace/defects4j/src/math/" + projName + "_buggy/";
+		String root = Config.D4J_SRC_ROOT + "/math/" + projName + "_buggy/";
 		ProjectConfig projectConfig = ProjectConfigFactory.createPorjectConfig(projType, projName, root);
 		
 		FaultLocation fl = new OffTheShellFL(projectConfig);

@@ -17,7 +17,7 @@ import cn.edu.pku.sei.plde.hanabi.utils.JavaCodeUtil;
 
 /**
  * Important class, defines flasky tests
- * @author nightwish
+ * @author Wang Bo
  *
  */
 public class BugsDotJarTestAnalyser {

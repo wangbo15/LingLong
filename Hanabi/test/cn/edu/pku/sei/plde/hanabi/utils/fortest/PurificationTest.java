@@ -9,6 +9,7 @@ import org.junit.Test;
 import cn.edu.pku.sei.plde.hanabi.build.proj.ProjectConfig;
 import cn.edu.pku.sei.plde.hanabi.build.proj.ProjectConfigFactory;
 import cn.edu.pku.sei.plde.hanabi.build.proj.ProjectConfigFactory.BugType;
+import cn.edu.pku.sei.plde.hanabi.main.Config;
 import cn.edu.pku.sei.plde.hanabi.utils.fortest.Purification;
 
 public class PurificationTest {
@@ -16,7 +17,7 @@ public class PurificationTest {
 	private ProjectConfig getProjectConfig(String proj, int bugId) {
 		BugType projType = BugType.D4J_TYPE;
 		String projName = proj + "_" + bugId;
-		String root = "/home/nightwish/workspace/defects4j/src/" + proj + "/" + proj + "_" + bugId + "_buggy/";
+		String root = Config.D4J_SRC_ROOT + proj + "/" + proj + "_" + bugId + "_buggy/";
 		ProjectConfig projectConfig = ProjectConfigFactory.createPorjectConfig(projType, projName, root);
 		return projectConfig;
 	}

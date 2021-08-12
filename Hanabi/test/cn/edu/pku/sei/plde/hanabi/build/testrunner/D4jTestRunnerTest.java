@@ -39,7 +39,7 @@ public class D4jTestRunnerTest {
 
 	@Test
 	public void test_Math_3() {
-		String root = "/home/nightwish/workspace/bug_repair/tmp/Math_3/";
+		String root = "/home/linglong/workspace/bug_repair/tmp/Math_3/";
 		ProjectConfig projectConfig = ProjectConfigFactory.createPorjectConfig(
 				BugType.D4J_TYPE, 
 				"math_3", 

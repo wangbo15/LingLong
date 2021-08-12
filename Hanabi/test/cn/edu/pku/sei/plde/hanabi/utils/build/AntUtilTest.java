@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import cn.edu.pku.sei.plde.hanabi.main.Config;
 import cn.edu.pku.sei.plde.hanabi.utils.build.AntUtil;
 
 public class AntUtilTest extends BuildTestAbs{
@@ -33,7 +34,7 @@ public class AntUtilTest extends BuildTestAbs{
 
 	@Test
 	public void test() {
-		String root = "/home/nightwish/workspace/defects4j/src/math/math_32_buggy/";
+		String root = Config.D4J_SRC_ROOT + "/math/math_32_buggy/";
 		Map<String, String> conf = AntUtil.config("math_32", root);
 		
 		assertTrue(BuildTestAbs.checkKeySet(conf.keySet()));
