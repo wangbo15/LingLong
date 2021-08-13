@@ -46,10 +46,10 @@ The main entrence is the class `edu.pku.sei.conditon.dedu.predall.PredAllExperim
 ### How to run
 *Hanabi* is an *Eclipse* project, in which it can be directly imported and executed.
 The main class is `cn.edu.pku.sei.plde.hanabi.main.Main`.
-We can also perform repair by JUnit tests.
+
+The provided VMWare image with envirment configured is [here](https://drive.google.com/file/d/1Jh381hwokCx7PgKeX9CajTviPcXcRTzX/view?usp=sharing).
 
 ### Generated patches
 
 The generated patches can be found in the folder [Patch](https://github.com/wangbo15/LingLong/tree/main/Patches).
 The analysis of the correctness/incorrectness of the patches can be found in `Readme.md`.
-
