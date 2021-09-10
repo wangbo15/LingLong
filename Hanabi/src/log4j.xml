@@ -3,7 +3,7 @@
 <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
     <appender name="I" class="org.apache.log4j.DailyRollingFileAppender">
         <param name="Append" value="true"/>
-        <param name="File" value="${log.base}/resultMessage/fixer.log"/>
+        <param name="File" value="./resultMessage/fixer.log"/>
         <param name="Threshold" value="DEBUG"/>
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="%-d{yyyy-MM-dd HH:mm:ss}  [%r ms] @ %l%n%m%n%n"/>
