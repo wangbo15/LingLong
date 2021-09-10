@@ -17,6 +17,7 @@ import edu.pku.sei.conditon.dedu.extern.pf.BUPathFinder;
 import edu.pku.sei.conditon.dedu.extern.pf.BeamSearchStrategy;
 import edu.pku.sei.conditon.dedu.extern.pf.PathFinder;
 import edu.pku.sei.conditon.dedu.extern.pf.SearchStrategy;
+import edu.pku.sei.conditon.dedu.predall.ConditionConfig;
 
 public class PredictorUtil {
 	
@@ -32,12 +33,14 @@ public class PredictorUtil {
 		String testRoot = config.getTestSrcRoot().getAbsolutePath();
 		String filePath = suspect.getFile();
         int line = suspect.getLine();
+        
+        checkConditionConfig();
+        
         try {
         	if(designatedVars == null || designatedVars.isEmpty()) {
         		SearchStrategy searchStrategy = BeamSearchStrategy.getInstance();
         		PathFinder pf = new BUPathFinder(bugName, srcRoot, testRoot, filePath, line, sid, searchStrategy);
 				pf.entry();
-
         		//FileInvoker.predict(bugName, srcRoot, testRoot, filePath, line, ithSuspicous);
         	}else {
         		//FileInvoker.predict(bugName, srcRoot, testRoot, filePath, line, sid, designatedVars);
@@ -167,4 +170,18 @@ public class PredictorUtil {
         }
         return true;
     }
+	
+	private static boolean checked = false;
+	private static void checkConditionConfig() {
+		if(checked) {
+			return;
+		}
+		ConditionConfig config = ConditionConfig.getInstance();
+		assert !config.isRecur(): "Error config for Condition, `recur` should be `false` !!!";
+		assert config.isBottomUp(): "Error config for Condition, `bottomUp` should be `true` !!!";
+		assert !config.isDebug(): "Error config for Condition, `debug` should be `false` !!!";
+		assert !config.isPredAll(): "Error config for Condition, `predAll` should be `false` !!!";
+		assert !config.isPredAllPreparing(): "Error config for Condition, `predAllPreparing` should be `false` !!!";
+		checked = true;
+	}
 }

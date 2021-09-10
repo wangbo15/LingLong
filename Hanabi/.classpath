@@ -33,7 +33,7 @@
 	<classpathentry kind="lib" path="lib/maven-core-3.5.0.jar" sourcepath="lib/maven-core-3.5.0-sources.jar"/>
 	<classpathentry kind="lib" path="lib/maven-model-3.5.0.jar" sourcepath="lib/maven-model-3.3.9-sources.jar"/>
 	<classpathentry kind="lib" path="lib/maven-model-builder-3.5.0.jar"/>
-	<classpathentry kind="lib" path="/Cond/bin"/>
+	<classpathentry kind="lib" path="/Cond/bin" sourcepath="/Cond/src"/>
 	<classpathentry kind="lib" path="lib/ProInfo.jar"/>
 	<classpathentry kind="lib" path="lib/jdom-2.0.6.jar"/>
 	<classpathentry kind="output" path="bin"/>

@@ -40,7 +40,7 @@ public class MLConditionFixer extends Fixer{
 		for(int i = 0; i < max; i++){
 			
 			Suspect currSuspect = suspects.get(i);
-
+			
 			List<TestOutput> allFailedRes;
 			if(allFailedTestsTemp == null) {
 				allFailedRes = testRunner.runAllAndGetErrorTestOutput();

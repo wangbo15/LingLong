@@ -28,7 +28,7 @@ import edu.pku.sei.conditon.util.Pair;
 import edu.pku.sei.conditon.util.StringUtil;
 
 public abstract class AbsInvoker {
-	public static final String PREDICTOR_ROOT = DeduMain.USER_HOME + "/workspace/eclipse/Condition/python/";
+	public static final String PREDICTOR_ROOT = DeduMain.USER_HOME + "/workspace/eclipse/LingLong/Cond/python/";
 	
 	protected static final ConditionConfig CONFIG = ConditionConfig.getInstance();
 	

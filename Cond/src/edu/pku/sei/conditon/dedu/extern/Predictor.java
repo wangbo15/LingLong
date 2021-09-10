@@ -56,7 +56,7 @@ public class Predictor {
 		this.srcRoot = srcRoot;
 		this.testRoot = testRoot;
 		
-		String allpredPath = AbsInvoker.PREDICTOR_ROOT + "/input/" + proj + "/" + model + "/expr/" + model + ".allpred.csv";
+		String allpredPath = AbsInvoker.PREDICTOR_ROOT + "input/" + proj + "/" + model + "/expr/" + model + ".allpred.csv";
 		
 		this.allOriPredicates = AbsInvoker.loadAllOriPredicate(allpredPath);
 		this.pos0TimeMap = AbsInvoker.getPos0TimeMap(allOriPredicates);
