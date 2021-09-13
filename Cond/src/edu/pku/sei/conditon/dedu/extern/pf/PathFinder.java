@@ -208,8 +208,12 @@ public abstract class PathFinder extends Predictor{
 		if (allVarInfoMap.isEmpty()) {
 			return CollectionUtil.emptyTreeSet();
 		}
-		
-		List<Long> timeResults = new ArrayList<>(searchStrategy.getResultLimits());
+		List<Long> timeResults;
+		if(CONFIG.isDebug()) {
+			timeResults = new ArrayList<>(searchStrategy.getResultLimits());
+		} else {
+			timeResults = Collections.<Long>emptyList();
+		}
 		
 		TreeSet<Path> results = CollectionUtil.<Path>newSortedSet();
 		TreeSet<ProgramPoint> frontier = CollectionUtil.<ProgramPoint>newSortedSet();
@@ -243,12 +247,15 @@ public abstract class PathFinder extends Predictor{
 					
 				}
 				//System.out.println("==== COMPLETE: " + results.size() + "\n" + p.toString());
-				timeResults.add(System.currentTimeMillis() - initTime);
+				if(CONFIG.isDebug()) {
+					timeResults.add(System.currentTimeMillis() - initTime);
+				}
 				
 			}
 		}
-		dumpTimeResult(timeResults);
-		
+		if(CONFIG.isDebug()) {
+			dumpTimeResult(timeResults);
+		}		
 		return results;
 	}
 

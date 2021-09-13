@@ -62,16 +62,6 @@ public class ConstantReplaceFixPattern extends RetStmtRelatedFixPattern{
 			return FixResult.IMPLEMENT_FAIL;
 		}
 		
-		List<String> allPreds = PredictorUtil.predictIfConds(projectConfig, suspect, iThSuspect);
-		if (allPreds == null || allPreds.isEmpty()) {
-			logger.info(">>>> EMPTY PREDICATION");
-			return FixResult.IMPLEMENT_FAIL;
-		}
-		
-		if(!allPreds.get(0).equals(ConstTrue.CONSTANT_TRUE)) {
-			return FixResult.IMPLEMENT_FAIL;			
-		}
-		
 		List<String> plauPatches = null;
 		if(EXHAUSTE_ALL_PATCH) {
 			plauPatches =  new ArrayList<>();

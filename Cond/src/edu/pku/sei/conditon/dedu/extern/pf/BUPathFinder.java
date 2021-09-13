@@ -61,7 +61,7 @@ public class BUPathFinder extends PathFinder{
 			ProgramPoint start = makeStart();
 			
 			TreeSet<Path> results = getResults(start, ctxFea, varToVarFeaMap, allVarInfoMap);
-	
+			
 			List<String> lines = Path.getResultLines(results);
 	
 			String proj_Bug_ithSusp = projAndBug + "_" + sid;
