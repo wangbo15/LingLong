@@ -217,7 +217,7 @@ public class DeduMain {
 		logger.info(subName.toUpperCase() + "_" + bugId + " USED TIME: " + (endTime - startTime)/1000 + " s" );
 	}
 	
-	private static void processDefects4J(){
+	private static void processDefects4J(String subj, int id){
 		
 		assert missionType == PROCESSING_TYPE.D4J;
 		
@@ -232,7 +232,7 @@ public class DeduMain {
 			String subName = subject.getName();
 			int bugId = subject.getId();
 			
-			if(!(subName.equalsIgnoreCase("math") && bugId == 106)){
+			if(!(subName.equalsIgnoreCase(subj) && bugId == id)){
 				continue;
 			}
 			
@@ -240,7 +240,7 @@ public class DeduMain {
 		}
 	}
 	
-	private static void processBugsDotJar() {
+	private static void processBugsDotJar(String subj) {
 		assert missionType == PROCESSING_TYPE.BUS_DOT_JAR;
 		List<Subject> subjects  = new ArrayList<>();
 
@@ -248,7 +248,7 @@ public class DeduMain {
 		
 		for(Subject subject : subjects){
 			
-			if(!(subject.getName().startsWith("camel_3690"))) {
+			if(!(subject.getName().startsWith(subj))) { //"camel_3690"
 				continue;
 			}
 			
@@ -299,7 +299,7 @@ public class DeduMain {
 	}
 
 	
-	private static void processOtherProject() {
+	private static void processOtherProject(String subj) {
 		
 		assert missionType == PROCESSING_TYPE.GIT_REPOS;
 		
@@ -307,7 +307,7 @@ public class DeduMain {
 		ConfigLoader.getOtherSubjectsInfo(subjects);
 		for(Subject subject : subjects){
 			
-			if(!subject.getName().equals("jdk7_math"))	//jdk7_math, JSci
+			if(!subject.getName().equals(subj))	//jdk7_math, JSci
 				continue;
 			
 			double startTime = System.currentTimeMillis();
@@ -352,14 +352,18 @@ public class DeduMain {
 	
 	public static void main(String[] args){
 		
+		assert args.length == 1;
 		double startTime = System.currentTimeMillis();
-		
 		if(missionType == PROCESSING_TYPE.D4J) {
-			processDefects4J();
+			String subj = args[0].split("_")[0];
+			int id = Integer.valueOf(args[0].split("_")[1]);
+			processDefects4J(subj, id);
 		} else if(missionType == PROCESSING_TYPE.BUS_DOT_JAR) {
-			processBugsDotJar();
+			String subj = args[0];
+			processBugsDotJar(subj);
 		} else {
-			processOtherProject();
+			String subj = args[0];
+			processOtherProject(subj);
 		}
 		
 		double endTime = System.currentTimeMillis();

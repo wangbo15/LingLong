@@ -372,7 +372,7 @@ public class TypeUtil {
 			}
 
 		} else if (tp.equals("int") || tp.equals("Integer")) {
-			if (infoTp.equals("int") || infoTp.equals("Integer") || infoTp.equals("long") || infoTp.equals("Long")) {
+			if (infoTp.equals("int") || infoTp.equals("Integer") || infoTp.equals("long") || infoTp.equals("Long") || infoTp.equals("double")) {
 				return true;
 			}
 
