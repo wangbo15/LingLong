@@ -47,7 +47,6 @@ The main entrence is the class `edu.pku.sei.conditon.dedu.predall.PredAllExperim
 *Hanabi* is an *Eclipse* project, in which it can be directly imported and executed.
 The main class is `cn.edu.pku.sei.plde.hanabi.main.Main`.
 
-The provided VMWare image with envirment configured is [here](https://drive.google.com/file/d/1Jh381hwokCx7PgKeX9CajTviPcXcRTzX/view?usp=sharing).
 
 ### Generated patches
 
