@@ -275,7 +275,7 @@ The patches are identical to the developer's patches.
 #### Hanabi patch 1 (Template 1):
 **File**: source/org/jfree/chart/plot/CategoryPlot.java
 
-**Line**: 965
+**Line**: 695
 
 ```java
      * @since 1.0.3
@@ -288,7 +288,7 @@ The patches are identical to the developer's patches.
 #### The developer's patch 1:
 **File**: source/org/jfree/chart/plot/CategoryPlot.java
 
-**Line**: 965
+**Line**: 695
 
 ``` java
       * @since 1.0.3
@@ -304,7 +304,7 @@ The patches are identical to the developer's patches.
 #### Hanabi patch 2 (Template 1):
 **File**: source/org/jfree/chart/plot/CategoryPlot.java
 
-**Line**: 2448
+**Line**: 973
 ```java
      * @since 1.0.7
      */
