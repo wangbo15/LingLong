@@ -8,6 +8,21 @@ This repo contains two projects, i.e., `Cond` and `Hanabi`.
 * [Cond](https://github.com/wangbo15/LingLong/tree/main/Cond) is an instance of LingLong, aiming to synthesize Java conditional expressions.
 * [Hanabi](https://github.com/wangbo15/LingLong/tree/main/Hanabi) is an automated program repair tool equipped with Cond, aimming to fix bugs in Java conditional expressions.
 
+If you use LingLong, please cite our paper.
+```tex
+@article{xiong2022l2s,
+  title={L2S: A framework for synthesizing the most probable program under a specification},
+  author={Xiong, Yingfei and Wang, Bo},
+  journal={ACM Transactions on Software Engineering and Methodology (TOSEM)},
+  volume={31},
+  number={3},
+  year={2022},
+  publisher = {Association for Computing Machinery},
+  doi = {10.1145/3487570}
+}
+```
+
+
 
 ## II. Cond
 ### Training Stage
